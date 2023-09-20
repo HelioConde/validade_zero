@@ -1,16 +1,16 @@
-name: Validade Zero
-run-name: ${{ github.actor }} is learning GitHub Actions
-on: [push]
+name: Deploy via ftp
+on: push
 jobs:
-  check-bats-version:
+  deploy:
+    name: Deploy
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v3
-        with:
-          node-version: '14'
-      - name: iniciar instalação
-        run: |
-            npm install
-            npm run build
-            npm run test
+    - uses: actions/checkout@v2
+
+    - name: FTP Deploy Locaweb
+      uses: locaweb/ftp-deploy@1.0.0
+      with:
+        host: ${{ secrets.HOST }} 
+        user: ${{ secrets.USER }}
+        password: ${{ secrets.PASS }}
+        localDir: "dist"
