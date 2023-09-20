@@ -1,0 +1,20 @@
+on:
+    push:
+        branches:
+            - main
+name: 🚀 Deploy website on push
+jobs:
+  web-deploy:
+    name: 🎉 Deploy
+    runs-on: ubuntu-latest
+    steps:
+    - name: 🚚 Get latest code
+      uses: actions/checkout@v3
+    
+    - name: 📂 Sync files
+      uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+      with:
+        server: ${{ secrets.ftp_host }} //prJ6wys905Uv
+        username: ${{ secrets.ftp_user }} //6ybW755Otn9i
+        password: ${{ secrets.ftp_password }} //ZvgJ34yJh73N
+        server-dir: public_html/helioconde/
