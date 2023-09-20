@@ -14,7 +14,7 @@ jobs:
     - name: 📂 Sync files
       uses: SamKirkland/FTP-Deploy-Action@v4.3.4
       with:
-        server: ${{ secrets.ftp_host }} //prJ6wys905Uv
-        username: ${{ secrets.ftp_user }} //6ybW755Otn9i
-        password: ${{ secrets.ftp_password }} //ZvgJ34yJh73N
+        server: ${{ secrets.ftp_host }}
+        username: ${{ secrets.ftp_user }}
+        password: ${{ secrets.ftp_password }}
         server-dir: public_html/helioconde/
