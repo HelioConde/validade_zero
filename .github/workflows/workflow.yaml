@@ -1,0 +1,16 @@
+name: Validade Zero
+run-name: ${{ github.actor }} is learning GitHub Actions
+on: [push]
+jobs:
+  check-bats-version:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '14'
+      - name: iniciar instalação
+        run: |
+            npm install
+            npm run build
+            npm run test
