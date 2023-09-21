@@ -14,3 +14,4 @@ jobs:
         user: ${{ secrets.USER }}
         password: ${{ secrets.PASS }}
         localDir: build  # Caminho completo para o diretório build
+
