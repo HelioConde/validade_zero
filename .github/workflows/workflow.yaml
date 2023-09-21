@@ -13,4 +13,4 @@ jobs:
         host: ${{ secrets.HOST }} 
         user: ${{ secrets.USER }}
         password: ${{ secrets.PASS }}
-        localDir: ls -l ${{ github.workspace }}
+        localDir: ${{ github.workspace }}
