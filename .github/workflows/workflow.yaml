@@ -35,6 +35,6 @@ jobs:
         host: ${{ secrets.FTP_HOST }}
         user: ${{ secrets.FTP_USER }}
         password: ${{ secrets.FTP_PASSWORD }}
-        localDir: "build"  # Use "build" como diretório de saída
+        localDir: ./build  # Use "build" como diretório de saída
 
         # Você pode adicionar outras opções aqui, se necessário
