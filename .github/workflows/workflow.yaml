@@ -20,6 +20,6 @@ jobs:
         host: ${{ secrets.HOST }}
         user: ${{ secrets.USER }}
         password: ${{ secrets.PASS }}
-        localDir: "build"  # Substitua "dist" pelo diretório correto onde seus arquivos construídos estão
+        localDir: "/build"  # Substitua "dist" pelo diretório correto onde seus arquivos construídos estão
 
         # Você pode adicionar outras opções aqui, se necessário
