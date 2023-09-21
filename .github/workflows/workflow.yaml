@@ -13,4 +13,4 @@ jobs:
         host: ${{ secrets.HOST }}
         user: ${{ secrets.USER }}
         password: ${{ secrets.PASS }}
-        localDir: /github/workspace/build  # Caminho completo para o diretório build
+        localDir: build  # Caminho completo para o diretório build
