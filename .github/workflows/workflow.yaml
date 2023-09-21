@@ -9,8 +9,8 @@ jobs:
 
     - name: Debug
       run: |
-        ls -l /github/workspace
-        ls -l /github/workspace/dist
+        ls -l ${{ github.workspace }}
+        ls -l ${{ github.workspace }}/build
 
 
     - name: FTP Deploy Locaweb
