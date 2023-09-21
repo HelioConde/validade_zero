@@ -1,40 +1,16 @@
-name: Build e Deploy via FTP
-
-on:
-  push:
-    branches:
-      - main  # Configure a branch que acionará o deploy
-
+name: Deploy via ftp
+on: push
 jobs:
-  build:
-    name: Construir
-    runs-on: ubuntu-latest
-
-    steps:
-    - name: Checkout código-fonte
-      uses: actions/checkout@v2
-
-    - name: Instalar dependências
-      run: npm install
-
-    - name: Construir projeto
-      run: npm run build  # Comando para construir o projeto
-
   deploy:
     name: Deploy
     runs-on: ubuntu-latest
-    needs: build  # Garante que a etapa de deploy execute após a etapa de build
-
     steps:
-    - name: Checkout código-fonte
-      uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - name: FTP Deploy Locaweb
       uses: locaweb/ftp-deploy@1.0.0
       with:
-        host: ${{ secrets.FTP_HOST }}
-        user: ${{ secrets.FTP_USER }}
-        password: ${{ secrets.FTP_PASSWORD }}
-        localDir: ./build  # Use "build" como diretório de saída
-
-        # Você pode adicionar outras opções aqui, se necessário
+        host: ${{ secrets.HOST }} 
+        user: ${{ secrets.USER }}
+        password: ${{ secrets.PASS }}
+        localDir: "dist"
