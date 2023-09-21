@@ -13,5 +13,4 @@ jobs:
         host: ${{ secrets.HOST }} 
         user: ${{ secrets.USER }}
         password: ${{ secrets.PASS }}
-        localDir: ${{ github.workspace }}/build
-        
+        localDir: ${{ github.workspace }}/validade_zero/build
