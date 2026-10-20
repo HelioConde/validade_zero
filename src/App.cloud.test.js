@@ -78,8 +78,9 @@ test('migra lote e catálogo sem sobrescrever dados existentes na nuvem', async 
   fireEvent.change(screen.getByLabelText('Senha'), { target: { value: 'senha-segura' } });
   fireEvent.submit(screen.getByRole('button', { name: 'Entrar', exact: true }).closest('form'));
   await waitFor(() => expect(signIn).toHaveBeenCalledWith('teste@example.com', 'senha-segura'));
-  expect(await screen.findByRole('button', { name: 'Migrar dados locais para a nuvem' })).toBeInTheDocument();
-  fireEvent.click(screen.getByRole('button', { name: 'Migrar dados locais para a nuvem' }));
+  const migrateButton = await screen.findByRole('button', { name: 'Migrar dados locais para a nuvem' });
+  await waitFor(() => expect(migrateButton).toBeEnabled());
+  fireEvent.click(migrateButton);
   await waitFor(() => expect(cloudApi.migrateLocalCatalog).toHaveBeenCalledTimes(1));
   await waitFor(() => expect(cloudApi.migrateLocalLots).toHaveBeenCalledTimes(1));
   expect(cloudApi.migrateLocalCatalog.mock.calls[0][0][0]).toMatchObject({code:'000123', name:'BISCOITO INTEGRAL'});
