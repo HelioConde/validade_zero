@@ -27,8 +27,15 @@ jobs:
         run: npm install --no-save --package-lock=false @playwright/test@1.56.1
       - name: Instalar navegador Chromium
         run: npx playwright install --with-deps chromium
+      - name: Compilar aplicação para teste E2E
+        run: npm run build
+        env:
+          CI: 'true'
+          PUBLIC_URL: '/'
       - name: Executar testes Playwright
         run: npx playwright test
+        env:
+          DEBUG: 'pw:webserver'
       - name: Salvar capturas, traces e relatório HTML
         if: always()
         uses: actions/upload-artifact@v4
