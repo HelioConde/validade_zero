@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import './App.css';
 import Icon from './components/Icon';
 import BarcodeCamera from './scanning/BarcodeCamera';
+import ProductPhoto from './components/ProductPhoto';
 import ExpiryCamera from './scanning/ExpiryCamera';
 import { CLOUD_ENABLED, cloudApi, restoreSession, signIn, signOut, signUp } from './cloud/api';
 import { MAX_CATALOG_CSV_BYTES, findProductByCode, loadCatalog, parseProductCatalogCsv, saveCatalog } from './domain/catalogo';
@@ -274,6 +275,10 @@ function InventoryApp({ cloud = null, user = null, onSignOut = null }) {
     openForm(null, { ...EMPTY, name: catalogFound.name, code: catalogFound.code, sector: catalogFound.sector || '' });
   }
 
+  function photoSaved(code, photoPath) {
+    setCatalogFound(current => current?.code === code ? { ...current, photoPath } : current);
+  }
+
   function persist(next, message) {
     try {
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
@@ -477,6 +482,9 @@ function InventoryApp({ cloud = null, user = null, onSignOut = null }) {
               </div>
               <button type="button" className="btn btn--primary" onClick={createLotFromCatalog}><Icon name="plus" size={17}/>Cadastrar lote deste produto</button>
             </div>}
+            {catalogFound && cloud && user?.id && <ProductPhoto key={catalogFound.code} product={catalogFound}
+              cloud={cloud} userId={user.id} onPhotoSaved={photoSaved}/>}
+            
             <p className="catalog-privacy"><Icon name="shield" size={15}/> {cloud ? 'Catálogo salvo em sua conta Supabase; somente usuários autorizados por políticas de acesso podem consultá-lo. Não fica publicado no GitHub.' : 'Arquivo CSV e produtos ficam neste navegador. Nada é enviado automaticamente ao GitHub ou a um servidor. Não há sincronização entre dispositivos.'}</p>
           </section>
 

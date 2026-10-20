@@ -164,9 +164,9 @@ export async function countCatalog() {
 }
 export async function findProduct(code) {
   const { data } = await dbRequest('validadezero_catalogo',
-    'select=code,name,sector,needs_review&code=eq.' + encodeURIComponent(code) + '&limit=1');
+    'select=code,name,sector,needs_review,photo_path&code=eq.' + encodeURIComponent(code) + '&limit=1');
   const row = data[0];
-  return row ? { code: row.code, name: row.name, sector: row.sector, review: row.needs_review } : null;
+  return row ? { code: row.code, name: row.name, sector: row.sector, review: row.needs_review, photoPath: row.photo_path || '' } : null;
 }
 
 // Importação é incremental e mantém fotos já existentes: não escreve photo_path.
@@ -198,6 +198,79 @@ export async function migrateLocalLots(entries) {
   return total;
 }
 
+
+const PHOTO_BUCKET = 'validadezero-produtos';
+const VALID_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const VALID_CODE = /^\d{1,14}$/;
+
+export function productPhotoPathIsValid(path, userId, code) {
+  if (typeof path !== 'string' || typeof userId !== 'string' || !VALID_UUID.test(userId) || !VALID_CODE.test(code)) return false;
+  const bits = path.split('/');
+  return bits.length === 3 && bits[0] === userId && bits[1] === code &&
+    VALID_UUID.test(bits[2].replace(/\.jpg$/i, '')) && /\.jpg$/i.test(bits[2]);
+}
+
+async function storageRequest(path, { method = 'GET', blob, mime = '', json } = {}) {
+  const token = await accessToken();
+  const response = await fetch(URL_BASE + '/storage/v1/' + path, {
+    method,
+    headers: {
+      apikey: KEY,
+      Authorization: 'Bearer ' + token,
+      ...(blob ? { 'Content-Type': mime || blob.type || 'image/jpeg', 'cache-control': '3600', 'x-upsert': 'false' } : {}),
+      ...(json ? { 'Content-Type': 'application/json' } : {})
+    },
+    ...(blob ? { body: blob } : json ? { body: JSON.stringify(json) } : {})
+  });
+  await responseOrError(response);
+  return response;
+}
+
+export async function downloadProductPhoto(path, userId, code) {
+  if (!productPhotoPathIsValid(path, userId, code)) throw new Error('Caminho da fotografia inválido ou sem permissão.');
+  const segments = path.split('/').map(encodeURIComponent).join('/');
+  const response = await storageRequest('object/authenticated/' + PHOTO_BUCKET + '/' + segments);
+  return response.blob();
+}
+
+async function removeStoredProductPhoto(path) {
+  await storageRequest('object/' + PHOTO_BUCKET, {
+    method: 'DELETE', json: { prefixes: [path] }
+  });
+}
+
+export async function uploadProductPhoto({ code, userId, blob, oldPath = '' }) {
+  if (!VALID_CODE.test(code) || !VALID_UUID.test(userId)) throw new Error('Código ou usuário inválido.');
+  if (!blob || blob.type !== 'image/jpeg' || blob.size < 1 || blob.size > 2 * 1024 * 1024) {
+    throw new Error('A fotografia precisa estar em JPEG com até 2 MB.');
+  }
+  const uuid = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : null;
+  if (!uuid || !VALID_UUID.test(uuid)) throw new Error('Não foi possível gerar um identificador seguro.');
+  const path = [userId, code, uuid + '.jpg'].join('/');
+  const endpoint = 'object/' + PHOTO_BUCKET + '/' + path.split('/').map(encodeURIComponent).join('/');
+  await storageRequest(endpoint, { method: 'POST', blob, mime: 'image/jpeg' });
+  try {
+    const { data } = await dbRequest('validadezero_catalogo',
+      'code=eq.' + encodeURIComponent(code) + '&select=code,photo_path', {
+        method: 'PATCH', body: { photo_path: path, updated_at: new Date().toISOString() },
+        prefer: 'return=representation'
+      });
+    if (!Array.isArray(data) || data.length !== 1 || data[0].photo_path !== path) {
+      throw new Error('O cadastro não foi atualizado. Verifique se o produto pertence à sua conta.');
+    }
+  } catch (error) {
+    try { await removeStoredProductPhoto(path); } catch { /* Limpeza automática pode falhar; reenvio usa novo arquivo. */ }
+    throw error;
+  }
+  if (oldPath && oldPath !== path && productPhotoPathIsValid(oldPath, userId, code)) {
+    try {
+      await removeStoredProductPhoto(oldPath);
+    } catch { /* A nova imagem já foi salva; a limpeza da anterior não deve impedir o uso. */ }
+  }
+  return path;
+}
+
 export const cloudApi = {
-  listLots, upsertLot, deleteLot, countCatalog, findProduct, importProducts, migrateLocalLots
+  listLots, upsertLot, deleteLot, countCatalog, findProduct, importProducts, migrateLocalLots,
+  downloadProductPhoto, uploadProductPhoto
 };
