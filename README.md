@@ -75,3 +75,17 @@ npx playwright show-report
 ~~~
 
 O Playwright abre um servidor de desenvolvimento isolado. Para inspecionar os artefatos de CI: GitHub → Actions → Playwright - UX e regressão → execução → `playwright-ux-report`. Em casos de erro, o relatório inclui traces, screenshots e vídeos.
+
+
+## Catálogo de EAN e códigos internos (fase local)
+
+A tela oferece **Importar catálogo CSV** e **Identificação rápida do produto**:
+
+1. Prepare arquivo de cabeçalhos: codigo;nome;setor_sugerido;revisar (UTF-8, separado por ponto e vírgula).
+2. Use Importar catálogo CSV. O catálogo fica apenas no localStorage do navegador (chave validade-zero:catalogo:v1); não é enviado ao GitHub Pages nem sincronizado entre funcionários.
+3. Informe ou leia um código com um leitor de barras conectado ao teclado, clique Buscar produto e depois Cadastrar lote deste produto. O nome e setor são sugeridos. Validade, lote e quantidade são confirmados pelo funcionário.
+4. EANs, GTINs e códigos internos são tratados como TEXTO: 000123 não é igual a 123.
+5. O setor ausente fica vazio e exige confirmação, assim como itens assinalados para revisão.
+6. Importação substitui apenas o catálogo neste navegador; não apaga lotes já cadastrados.
+
+Limites: CSV até 8 MB, até 30 mil registros, sujeito a cota do navegador, sem autenticação, fotos, OCR nem sincronização. A câmera do celular e OCR de validade ficam para as próximas etapas. Nenhuma base real foi publicada no repositório.
