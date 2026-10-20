@@ -73,8 +73,8 @@ function EntryForm({ initial, onSave, onCancel, onDirtyChange, fromCatalog = fal
         setDetectedProduct(found);
         setValues(current => ({
           ...current, code,
-          name: fromScanner || !current.name ? found.name : current.name,
-          sector: (fromScanner || !current.name) && found.sector ? found.sector : current.sector
+          name: current.name || found.name,
+          sector: !current.name && found.sector ? found.sector : current.sector
         }));
         setProductNotice('Produto encontrado. Confira nome e imagem.');
       } else {
@@ -162,7 +162,6 @@ function EntryForm({ initial, onSave, onCancel, onDirtyChange, fromCatalog = fal
             <input {...inputProps('code')} autoComplete="off" spellCheck={false} inputMode="numeric"
               required maxLength="14" pattern="[0-9]{1,14}"
               value={values.code} onChange={e => update('code', e.target.value)}
-              onBlur={() => { if (isValidProductCode(values.code) && !detectedProduct && !productBusy) identifyCode(values.code); }}
               placeholder="Ex.: 7898276970072" />
             <button type="button" className="ean-input-camera"
               aria-label="Escanear EAN do lote com a câmera" title="Escanear EAN do lote com a câmera"
