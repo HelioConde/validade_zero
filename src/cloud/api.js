@@ -6,6 +6,10 @@ export const CLOUD_ENABLED =
 const URL_BASE = (process.env.REACT_APP_SUPABASE_URL || '').replace(/\/$/, '');
 const KEY = process.env.REACT_APP_SUPABASE_PUBLISHABLE_KEY || '';
 const SESSION_KEY = 'validade-zero:supabase-session:v1';
+export function hasStoredCloudSession() {
+  try { return Boolean(window.localStorage.getItem(SESSION_KEY)); }
+  catch { return false; }
+}
 const PAGE_SIZE = 1000;
 let session = null;
 let refreshing = null;
@@ -185,6 +189,24 @@ export async function importProducts(products, onProgress) {
   }
   return done;
 }
+// Migração do catálogo local, apenas produtos AUSENTES: não substitui fotos/nome/setor remotos.
+export async function migrateLocalCatalog(products, onProgress) {
+  let processed = 0;
+  for (let i = 0; i < products.length; i += 200) {
+    const group = products.slice(i, i + 200).map(item => ({
+      code: item.code, name: item.name, sector: item.sector || '',
+      needs_review: Boolean(item.review)
+    }));
+    await dbRequest('validadezero_catalogo', 'on_conflict=user_id,code', {
+      method: 'POST', body: group,
+      prefer: 'missing=default,resolution=ignore-duplicates,return=minimal'
+    });
+    processed += group.length;
+    if (onProgress) onProgress(processed);
+  }
+  return processed;
+}
+
 // Migração aditiva, nunca apaga dados existentes nem reescreve lotes iguais.
 export async function migrateLocalLots(entries) {
   let total = 0;
@@ -271,6 +293,7 @@ export async function uploadProductPhoto({ code, userId, blob, oldPath = '' }) {
 }
 
 export const cloudApi = {
-  listLots, upsertLot, deleteLot, countCatalog, findProduct, importProducts, migrateLocalLots,
+  listLots, upsertLot, deleteLot, countCatalog, findProduct, importProducts,
+  migrateLocalCatalog, migrateLocalLots,
   downloadProductPhoto, uploadProductPhoto
 };
