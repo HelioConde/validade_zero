@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import './App.css';
 import Icon from './components/Icon';
+import BarcodeCamera from './scanning/BarcodeCamera';
+import ExpiryCamera from './scanning/ExpiryCamera';
 import { CLOUD_ENABLED, cloudApi, restoreSession, signIn, signOut, signUp } from './cloud/api';
 import { MAX_CATALOG_CSV_BYTES, findProductByCode, loadCatalog, parseProductCatalogCsv, saveCatalog } from './domain/catalogo';
 import {
@@ -124,6 +126,7 @@ function EntryForm({ initial, onSave, onCancel, onDirtyChange, fromCatalog = fal
         <input {...inputProps('expiration')} required type="date" value={values.expiration}
           onChange={e => update('expiration', e.target.value)} />
       </Field>
+      <ExpiryCamera onConfirm={value => update('expiration', value)}/>
       <div className="form-actions">
         <button type="button" className="btn btn--ghost" onClick={onCancel}>Cancelar</button>
         <button type="submit" className="btn btn--primary"><Icon name="check" size={17}/>{initial?.id ? 'Salvar alterações' : 'Cadastrar lote'}</button>
@@ -153,6 +156,7 @@ function InventoryApp({ cloud = null, user = null, onSignOut = null }) {
   const localLots = cloud && !localMigrated ? readEntries(window.localStorage) : [];
   const [catalog, setCatalog] = useState(() => cloud ? [] : loadCatalog(window.localStorage));
   const [catalogCode, setCatalogCode] = useState('');
+  const [scannerOpen, setScannerOpen] = useState(false);
   const [catalogFound, setCatalogFound] = useState(null);
   const [catalogNotice, setCatalogNotice] = useState('');
   const [prefill, setPrefill] = useState(null);
@@ -244,14 +248,25 @@ function InventoryApp({ cloud = null, user = null, onSignOut = null }) {
     }
   }
 
-  async function searchCatalog(event) {
-    event.preventDefault();
-    const code = catalogCode.trim();
+  async function lookupCatalogCode(code) {
+    const cleanCode = String(code).trim();
+    setCatalogCode(cleanCode);
+    setCatalogFound(null);
     try {
-      const found = cloud ? await cloud.findProduct(code) : findProductByCode(catalog, code);
+      const found = cloud ? await cloud.findProduct(cleanCode) : findProductByCode(catalog, cleanCode);
       setCatalogFound(found);
       setCatalogNotice(found ? 'Produto encontrado. Confira os dados antes de registrar a validade.' : 'Código não encontrado neste catálogo. Verifique a leitura ou cadastre o lote manualmente.');
     } catch (error) { setCatalogFound(null); setCatalogNotice('Não foi possível consultar o Supabase: ' + error.message); }
+  }
+
+  function searchCatalog(event) {
+    event.preventDefault();
+    lookupCatalogCode(catalogCode);
+  }
+
+  function onBarcodeDetected(code) {
+    setScannerOpen(false);
+    lookupCatalogCode(code);
   }
 
   function createLotFromCatalog() {
@@ -451,8 +466,10 @@ function InventoryApp({ cloud = null, user = null, onSignOut = null }) {
                   placeholder="Ex.: 7891234567895" value={catalogCode} maxLength={14}
                   onChange={event => { setCatalogCode(event.target.value); setCatalogFound(null); setCatalogNotice(''); }}/>
                 <button className="btn btn--primary" type="submit"><Icon name="search" size={17}/>Buscar produto</button>
+                <button className="btn btn--outline" type="button" onClick={() => setScannerOpen(true)} aria-label="Escanear EAN com a câmera"><Icon name="scan" size={19}/>Escanear EAN</button>
               </div>
             </form>
+            {scannerOpen && <BarcodeCamera onDetected={onBarcodeDetected} onClose={() => setScannerOpen(false)}/>}
             {catalogNotice && <p className="catalog-notice" role="status" aria-live="polite">{catalogNotice}</p>}
             {catalogFound && <div className="catalog-match" aria-label="Produto encontrado">
               <div><strong>{catalogFound.name}</strong><small>Código: {catalogFound.code} · Setor: {catalogFound.sector || 'não informado'}</small>
