@@ -145,3 +145,13 @@ Para registrar foto quando um produto foi encontrado no catálogo central, usuá
 Para **criar ou editar** um lote, informe um **EAN/código interno numérico de 1 a 14 dígitos**. O campo é obrigatório e não permite salvar vazio nem com letras. O ícone de câmera fica dentro do campo e abre o mesmo scanner EAN usado na identificação rápida. Na identificação rápida, o ícone também aparece ao lado do código, sem precisar de botão separado. A captura preenche o campo; a data de validade continua sendo confirmada separadamente via OCR ou digitação.
 
 Por compatibilidade, lotes antigos que já existam sem código continuam legíveis no histórico e nos backups, mas ao editá-los será necessário preencher o EAN/código interno antes de salvar. Códigos internos numéricos curtos do catálogo continuam aceitos e zeros à esquerda são preservados.
+
+
+## Scanner no campo de validade e fotografia automática do EAN
+
+- O botão **Ler validade pela câmera** fica **dentro do input Data de validade**, ao lado do seletor de data. O OCR continua mostrando datas candidatas e só preenche o input após escolha explícita. Nenhuma fotografia do rótulo é enviada ao servidor.
+- Ao escanear o EAN no formulário ou buscá-lo em Identificação rápida, a aplicação procura nome e setor no catálogo particular/local e depois no catálogo central. Quando existe **foto do produto**, mostra a imagem. Se não existir, oferece **Cadastrar foto com câmera** ou escolher uma imagem.
+- **Modo sem login:** fotos JPEG comprimidas ficam no **IndexedDB** local, associadas ao código, e reaparecem nas buscas no mesmo navegador. Elas não são publicadas nem sincronizadas; limpar dados do navegador as apaga, e o backup JSON de lotes não inclui fotos.
+- **Conta Supabase:** a primeira fotografia de um produto do catálogo central associa automaticamente o código ao catálogo privado da conta antes de enviar a imagem para o Supabase Storage com RLS. A imagem privada reaparece quando o EAN é encontrado novamente nessa conta.
+- Se o EAN não existir no catálogo, é possível informar o nome manualmente no formulário e capturar a imagem. A foto é opcional e não bloqueia o cadastro do lote.
+- Testar a câmera e a leitura de embalagens reais em Android/iPhone; os testes automatizados usam câmeras e fotos simuladas.

@@ -342,3 +342,9 @@ tbody tr:hover { background: #f8f8f9; }
 .ean-input-wrap--search { flex:1 1 190px; }
 .ean-input-wrap--search > input { flex:1 1 auto; }
 @media(max-width:600px){.ean-input-camera{width:44px;height:44px;}.ean-input-wrap--search{flex-basis:100%;}}
+
+/* A data de validade usa o mesmo padrão de câmera interna do EAN. */
+.expiry-input-wrap > input[type="date"] { padding-right: 90px !important; min-height: 48px; }
+.expiry-input-wrap > input[type="date"]::-webkit-calendar-picker-indicator { margin-right: 47px; cursor: pointer; }
+.expiry-input-wrap .ean-input-camera { z-index: 1; }
+.field > .expiry-scanner { margin-top: 10px; }

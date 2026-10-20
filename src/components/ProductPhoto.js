@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import Icon from './Icon';
 import { prepareProductPhoto } from '../cloud/photo';
 
-export default function ProductPhoto({ product, cloud, userId, onPhotoSaved }) {
+export default function ProductPhoto({ product, cloud, userId, onPhotoSaved, localMode = false }) {
   const captureRef = useRef(null);
   const fileRef = useRef(null);
   const [photoUrl, setPhotoUrl] = useState('');
@@ -38,11 +38,19 @@ export default function ProductPhoto({ product, cloud, userId, onPhotoSaved }) {
     setBusy(true); setMessage('Preparando a fotografia…');
     try {
       const blob = await prepareProductPhoto(file);
-      setMessage('Enviando foto para o Supabase…');
+      setMessage(localMode ? 'Salvando foto neste navegador…' : 'Enviando foto para o Supabase…');
+      // No modo nuvem, associe ao cadastro privado antes de gravar a imagem.
+      // Não crie cadastro com nome provisório.
+      if (!localMode && (product.source === 'central' || product.source === 'manual')) {
+        if (!product.name || product.name === 'Produto não cadastrado') {
+          throw new Error('Informe o nome do produto antes de cadastrar a fotografia.');
+        }
+        await cloud.adoptCentralProduct(product);
+      }
       const photoPath = await cloud.uploadProductPhoto({
         code: product.code, userId, blob, oldPath: product.photoPath || ''
       });
-      onPhotoSaved(product.code, photoPath);
+      onPhotoSaved?.(product.code, photoPath);
       setMessage('Fotografia salva no cadastro. Não será pedida novamente para este EAN.');
       setReload(current => current + 1);
     } catch (error) {
@@ -64,7 +72,7 @@ export default function ProductPhoto({ product, cloud, userId, onPhotoSaved }) {
         : 'Fotografe uma vez para reconhecer o produto visualmente nos próximos registros. Você pode continuar sem foto.'}</p>
       <div className="product-photo__actions">
         <button type="button" className="btn btn--outline" disabled={busy} onClick={() => captureRef.current?.click()}>
-          <Icon name="camera" size={16}/>{product.photoPath ? 'Trocar foto' : 'Tirar foto'}
+          <Icon name="camera" size={16}/>{product.photoPath ? 'Trocar foto' : 'Cadastrar foto com câmera'}
         </button>
         <button type="button" className="btn btn--ghost" disabled={busy} onClick={() => fileRef.current?.click()}>
           Escolher arquivo
@@ -77,7 +85,7 @@ export default function ProductPhoto({ product, cloud, userId, onPhotoSaved }) {
       <input className="sr-only" type="file" ref={fileRef} accept="image/jpeg,image/png,image/webp"
         aria-label="Selecionar fotografia do produto" tabIndex={-1} onChange={upload}/>
       {message && <p className="product-photo__status" role="status">{message}</p>}
-      <small>Foto JPEG otimizada, até 2 MB, guardada em pasta privada da sua conta.</small>
+      <small>{localMode ? 'Foto armazenada só neste navegador (IndexedDB), não sincronizada.' : 'Foto JPEG otimizada, até 2 MB, guardada em pasta privada da sua conta.'}</small>
     </div>
   </section>;
 }

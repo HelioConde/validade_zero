@@ -358,3 +358,61 @@ test('ícone de câmera fica junto do EAN na Identificação rápida', async ({p
   await page.getByRole('button',{name:/Cadastrar primeiro lote/}).click();
   await expect(page.getByLabel('EAN / código interno *').locator('..').getByRole('button',{name:'Escanear EAN do lote com a câmera'})).toBeVisible();
 });
+
+
+test('foto do EAN é cadastrada uma única vez e reaparece no formulário e após recarregar', async ({page}) => {
+  await page.route('**/rest/v1/validadezero_catalogo_central?**', route =>
+    route.fulfill({status:200,contentType:'application/json',body:JSON.stringify([{
+      code:'7898276970072',name:'ESPUMANTE CASA VALDUGA 750ML 130 ANOS',
+      sector:'Bebidas',needs_review:false
+    }])})
+  );
+  await page.getByLabel('Código EAN / código interno').fill('7898276970072');
+  await page.getByRole('button',{name:'Buscar produto'}).click();
+  await expect(page.getByRole('region',{name:'Fotografia do produto'})).toBeVisible();
+  await expect(page.getByText('Este produto ainda não tem fotografia')).toBeVisible();
+  await expect(page.getByRole('button',{name:'Cadastrar foto com câmera'})).toBeVisible();
+  const jpgBase64 = await page.evaluate(() => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 88; canvas.height = 88;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#d25b27';ctx.fillRect(0,0,88,88);
+    return canvas.toDataURL('image/jpeg',0.8).split(',')[1];
+  });
+  await page.getByLabel('Selecionar fotografia do produto').setInputFiles({
+    name:'produto.jpg',mimeType:'image/jpeg',buffer:Buffer.from(jpgBase64,'base64')
+  });
+  await expect(page.getByAltText(/Fotografia cadastrada: ESPUMANTE CASA VALDUGA/)).toBeVisible();
+  await page.getByRole('button',{name:'Cadastrar lote deste produto'}).click();
+  await expect(page.locator('.entry-form').getByAltText(/Fotografia cadastrada: ESPUMANTE CASA VALDUGA/)).toBeVisible();
+  await expect(page.locator('.entry-form').getByRole('button',{name:'Trocar foto'})).toBeVisible();
+  await page.reload();
+  await page.getByLabel('Código EAN / código interno').fill('7898276970072');
+  await page.getByRole('button',{name:'Buscar produto'}).click();
+  await expect(page.getByAltText(/Fotografia cadastrada: ESPUMANTE CASA VALDUGA/)).toBeVisible();
+  await expect(page.getByRole('button',{name:'Trocar foto'})).toBeVisible();
+});
+
+test('OCR da validade abre a partir do ícone dentro do input e só preenche após confirmação', async ({page}) => {
+  await page.getByRole('button',{name:/Cadastrar primeiro lote/}).click();
+  await expect(page.getByLabel('Data de validade *').locator('..')
+    .getByRole('button',{name:'Ler validade pela câmera'})).toBeVisible();
+  await page.evaluate(() => {
+    window.Tesseract = {
+      createWorker:async()=>({
+        recognize:async()=>({data:{text:'FAB 05/01/2027\nVAL 30/11/2027'}}),
+        terminate:async()=>{}
+      })
+    };
+  });
+  await page.getByRole('button',{name:'Ler validade pela câmera'}).click();
+  await expect(page.getByRole('region',{name:'Reconhecimento da validade'})).toBeVisible();
+  await page.getByLabel('Selecionar imagem da validade').setInputFiles({
+    name:'rotulo.png',mimeType:'image/png',
+    buffer:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+p2ioAAAAASUVORK5CYII=','base64')
+  });
+  await expect(page.getByLabel('Data de validade *')).toHaveValue('');
+  await page.getByRole('button',{name:/30\/11\/2027/}).click();
+  await expect(page.getByLabel('Data de validade *')).toHaveValue('2027-11-30');
+  await expect(page.getByRole('region',{name:'Reconhecimento da validade'})).toHaveCount(0);
+});

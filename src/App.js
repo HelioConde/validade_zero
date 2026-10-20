@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import './App.css';
 import Icon from './components/Icon';
 import BarcodeCamera from './scanning/BarcodeCamera';
 import ProductPhoto from './components/ProductPhoto';
+import { loadLocalProductPhoto, localProductPhotoPath, localPhotoApi } from './domain/localProductPhotos';
 import { findCentralProduct, canSearchCentralCatalog } from './cloud/centralCatalog';
 import ExpiryCamera from './scanning/ExpiryCamera';
 import { CLOUD_ENABLED, cloudApi, hasStoredCloudSession, restoreSession, signIn, signOut, signUp } from './cloud/api';
@@ -39,14 +40,63 @@ function Field({ label, required, field, error, children }) {
   );
 }
 
-function EntryForm({ initial, onSave, onCancel, onDirtyChange, fromCatalog = false }) {
+function EntryForm({ initial, onSave, onCancel, onDirtyChange, fromCatalog = false, onLookupProduct, photoCloud, photoUserId, localMode }) {
   const [values, setValues] = useState(initial || EMPTY);
   const [errors, setErrors] = useState({});
   const [lotScannerOpen, setLotScannerOpen] = useState(false);
+  const [expiryScannerOpen, setExpiryScannerOpen] = useState(false);
+  const [detectedProduct, setDetectedProduct] = useState(null);
+  const [productNotice, setProductNotice] = useState('');
+  const productRequest = useRef(0);
   const fields = useRef({});
   useEffect(() => { fields.current.name?.focus(); }, []);
+  useEffect(() => {
+    if (!initial?.code || !onLookupProduct) return undefined;
+    let active = true;
+    onLookupProduct(initial.code).then(found => {
+      if (active) setDetectedProduct(found);
+    }).catch(() => { /* O lote continua editável sem rede. */ });
+    return () => { active = false; };
+  }, [initial?.code, onLookupProduct]);
+
+  async function identifyCode(code) {
+    update('code', code);
+    const requestId = productRequest.current;
+    setDetectedProduct(null);
+    setProductNotice('Procurando cadastro e imagem do produto…');
+    try {
+      const found = await onLookupProduct(code);
+      if (requestId !== productRequest.current) return;
+      if (found) {
+        setDetectedProduct(found);
+        setValues(current => ({
+          ...current, code,
+          name: current.name || found.name,
+          sector: !current.name && found.sector ? found.sector : current.sector
+        }));
+        setProductNotice('Produto encontrado. Confira nome e imagem.');
+      } else {
+        setProductNotice('Produto não encontrado no catálogo. Informe o nome e cadastre uma foto, se desejar.');
+      }
+    } catch (error) {
+      if (requestId === productRequest.current) {
+        setProductNotice('Sem consulta online: ' + error.message + '. Você pode continuar manualmente.');
+      }
+    }
+  }
+
+  const photoProduct = isValidProductCode(values.code) && values.name.trim()
+    ? detectedProduct?.code === values.code
+      ? { ...detectedProduct, name: values.name.trim(), sector: values.sector }
+      : { code: values.code.trim(), name: values.name.trim(), sector: values.sector, source: 'manual', photoPath: '' }
+    : null;
 
   function update(field, value) {
+    if (field === 'code') {
+      ++productRequest.current;
+      setDetectedProduct(null);
+      setProductNotice('');
+    }
     setValues(current => ({ ...current, [field]: value }));
     setErrors(current => ({ ...current, [field]: undefined }));
     onDirtyChange(true);
@@ -118,7 +168,7 @@ function EntryForm({ initial, onSave, onCancel, onDirtyChange, fromCatalog = fal
             </button>
           </div>
           {lotScannerOpen && <BarcodeCamera
-            onDetected={code => { update('code', code); setLotScannerOpen(false); fields.current.code?.focus(); }}
+            onDetected={code => { setLotScannerOpen(false); identifyCode(code); fields.current.code?.focus(); }}
             onClose={() => setLotScannerOpen(false)}/>}
         </Field>
         <Field label="Setor" required field="sector" error={errors.sector}>
@@ -128,6 +178,12 @@ function EntryForm({ initial, onSave, onCancel, onDirtyChange, fromCatalog = fal
           </select>
         </Field>
       </div>
+      {photoProduct && <ProductPhoto key={'lote-' + photoProduct.code} product={photoProduct}
+        cloud={photoCloud} userId={photoUserId} localMode={localMode}
+        onPhotoSaved={(code, photoPath) => setDetectedProduct(previous =>
+          previous?.code === code ? { ...previous, photoPath, source: localMode ? 'local' : 'private' }
+            : { ...photoProduct, photoPath, source: localMode ? 'local' : 'private' })}/>}
+      {productNotice && <p className="catalog-form-notice" role="status">{productNotice}</p>}
       <div className="form-row">
         <Field label="Lote" required field="batch" error={errors.batch}>
           <input {...inputProps('batch')} autoComplete="off" spellCheck={false} required maxLength="70"
@@ -140,10 +196,17 @@ function EntryForm({ initial, onSave, onCancel, onDirtyChange, fromCatalog = fal
         </Field>
       </div>
       <Field label="Data de validade" required field="expiration" error={errors.expiration}>
-        <input {...inputProps('expiration')} required type="date" value={values.expiration}
-          onChange={e => update('expiration', e.target.value)} />
+        <div className="ean-input-wrap expiry-input-wrap">
+          <input {...inputProps('expiration')} required type="date" value={values.expiration}
+            onChange={e => update('expiration', e.target.value)} />
+          <button type="button" className="ean-input-camera" aria-label="Ler validade pela câmera"
+            title="Ler validade pela câmera" aria-expanded={expiryScannerOpen}
+            onClick={() => setExpiryScannerOpen(true)}><Icon name="camera" size={20}/></button>
+        </div>
+        {expiryScannerOpen && <ExpiryCamera initiallyOpen
+          onConfirm={value => { update('expiration', value); fields.current.expiration?.focus(); }}
+          onClose={() => setExpiryScannerOpen(false)}/>}
       </Field>
-      <ExpiryCamera onConfirm={value => update('expiration', value)}/>
       <div className="form-actions">
         <button type="button" className="btn btn--ghost" onClick={onCancel}>Cancelar</button>
         <button type="submit" className="btn btn--primary"><Icon name="check" size={17}/>{initial?.id ? 'Salvar alterações' : 'Cadastrar lote'}</button>
@@ -268,6 +331,19 @@ function InventoryApp({ cloud = null, user = null, onSignOut = null, onActivateC
     }
   }
 
+  const resolveProductForCode = useCallback(async code => {
+    const normalized = String(code || '').trim();
+    if (!isValidProductCode(normalized)) return null;
+    const own = cloud ? await cloud.findProduct(normalized) : findProductByCode(catalog, normalized);
+    const found = own ? { ...own, source: cloud ? 'private' : 'local' } : await findCentralProduct(normalized);
+    if (!found) return null;
+    if (!cloud) {
+      const photo = await loadLocalProductPhoto(normalized).catch(() => null);
+      return { ...found, photoPath: photo ? localProductPhotoPath(normalized) : '' };
+    }
+    return found;
+  }, [cloud, catalog]);
+
   async function lookupCatalogCode(code) {
     const cleanCode = String(code || '').trim();
     const thisSearch = ++catalogSearchId.current;
@@ -280,12 +356,7 @@ function InventoryApp({ cloud = null, user = null, onSignOut = null, onActivateC
     setCatalogSearching(true);
     setCatalogNotice('Pesquisando produto…');
     try {
-      const ownProduct = cloud
-        ? await cloud.findProduct(cleanCode)
-        : findProductByCode(catalog, cleanCode);
-      const found = ownProduct
-        ? { ...ownProduct, source: cloud ? 'private' : 'local' }
-        : await findCentralProduct(cleanCode);
+      const found = await resolveProductForCode(cleanCode);
       if (catalogSearchId.current !== thisSearch) return;
       setCatalogFound(found);
       if (found) {
@@ -321,23 +392,7 @@ function InventoryApp({ cloud = null, user = null, onSignOut = null, onActivateC
   }
 
   function photoSaved(code, photoPath) {
-    setCatalogFound(current => current?.code === code ? { ...current, photoPath } : current);
-  }
-
-  async function saveCentralToMyCatalog() {
-    const item = catalogFound;
-    if (!cloud || !item || item.source !== 'central') return;
-    setCatalogSearching(true);
-    try {
-      const result = await cloud.adoptCentralProduct(item);
-      if (catalogFound?.code === item.code) {
-        setCatalogFound({ ...result, source: 'private' });
-        setCloudCount(await cloud.countCatalog());
-      }
-      setCatalogNotice('Produto adicionado à sua conta. Agora você pode cadastrar uma fotografia privada.');
-    } catch (error) {
-      setCatalogNotice('Não foi possível adicionar o produto à conta: ' + error.message);
-    } finally { setCatalogSearching(false); }
+    setCatalogFound(current => current?.code === code ? { ...current, photoPath, source: cloud ? 'private' : 'local' } : current);
   }
 
   function persist(next, message) {
@@ -582,13 +637,10 @@ function InventoryApp({ cloud = null, user = null, onSignOut = null, onActivateC
               </div>
               <button type="button" className="btn btn--primary" onClick={createLotFromCatalog}><Icon name="plus" size={17}/>Cadastrar lote deste produto</button>
             </div>}
-            {catalogFound && cloud && catalogFound.source === 'central' && <div className="catalog-central-photo">
-              <span>Para salvar uma foto privada deste produto, adicione-o primeiro à sua conta.</span>
-              <button type="button" className="btn btn--outline" disabled={catalogSearching}
-                onClick={saveCentralToMyCatalog}>Adicionar ao meu catálogo e habilitar foto</button>
-            </div>}
-            {catalogFound && cloud && catalogFound.source === 'private' && user?.id && <ProductPhoto key={catalogFound.code} product={catalogFound}
-              cloud={cloud} userId={user.id} onPhotoSaved={photoSaved}/>}
+            {catalogFound && <ProductPhoto key={'busca-' + catalogFound.code} product={catalogFound}
+              cloud={cloud || localPhotoApi} userId={user?.id || ''} localMode={!cloud}
+              onPhotoSaved={photoSaved}/>}
+
             
             <p className="catalog-privacy"><Icon name="shield" size={15}/> {cloud
               ? 'O catálogo central só disponibiliza nome, EAN e setor. Seus lotes e fotos continuam privados na sua conta Supabase.'
@@ -601,7 +653,10 @@ function InventoryApp({ cloud = null, user = null, onSignOut = null, onActivateC
             <div className="form-panel__head"><div><span className="eyebrow">MOVIMENTAÇÃO DE ESTOQUE</span><h2 id="form-title">{editing ? 'Editar lote' : 'Cadastrar novo lote'}</h2></div>
               <button type="button" className="icon-button" aria-label="Fechar formulário" onClick={closeForm}><Icon name="close" size={20}/></button>
             </div>
-            <EntryForm key={editing?.id || prefill?.code || 'new'} initial={editing || prefill} fromCatalog={Boolean(prefill)} onSave={save} onCancel={closeForm} onDirtyChange={setFormDirty}/>
+            <EntryForm key={editing?.id || prefill?.code || 'new'} initial={editing || prefill}
+              fromCatalog={Boolean(prefill)} onSave={save} onCancel={closeForm} onDirtyChange={setFormDirty}
+              onLookupProduct={resolveProductForCode} photoCloud={cloud || localPhotoApi}
+              photoUserId={user?.id || ''} localMode={!cloud}/>
           </section>}
 
           <section className="list-panel" aria-labelledby="list-title">
