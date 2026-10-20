@@ -63,3 +63,19 @@ test('os dois campos exibem controle de câmera próximo ao input', () => {
   expect(screen.getByLabelText('EAN / código interno *').parentElement.querySelector('.ean-input-camera')).not.toBeNull();
   expect(screen.getByRole('button', { name: 'Escanear EAN do lote com a câmera' })).toBeInTheDocument();
 });
+
+
+test('a câmera OCR fica dentro do input de validade e pode ser fechada', () => {
+  render(<App/>);
+  fireEvent.click(screen.getByRole('button', { name: /Cadastrar primeiro lote/ }));
+  const input = screen.getByLabelText('Data de validade *');
+  expect(input.parentElement.className).toContain('expiry-input-wrap');
+  const button = screen.getByRole('button', {name:'Ler validade pela câmera'});
+  expect(button).toHaveAttribute('aria-expanded', 'false');
+  fireEvent.click(button);
+  expect(screen.getByRole('region', {name:'Reconhecimento da validade'})).toBeInTheDocument();
+  expect(button).toHaveAttribute('aria-expanded', 'true');
+  fireEvent.click(screen.getByRole('button', {name:'Fechar leitor de validade'}));
+  expect(screen.queryByRole('region', {name:'Reconhecimento da validade'})).not.toBeInTheDocument();
+  expect(button).toHaveAttribute('aria-expanded', 'false');
+});

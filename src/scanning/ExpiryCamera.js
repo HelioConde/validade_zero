@@ -2,8 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import Icon from '../components/Icon';
 import { recogniseExpiry } from './expiry';
 
-export default function ExpiryCamera({ onConfirm }) {
-  const [open, setOpen] = useState(false);
+export default function ExpiryCamera({ onConfirm, onClose, initiallyOpen = false }) {
+  const [open, setOpen] = useState(initiallyOpen);
   const [preview, setPreview] = useState(false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
@@ -85,6 +85,7 @@ export default function ExpiryCamera({ onConfirm }) {
   function close() {
     setPreview(false); setOpen(false); setBusy(false);
     setMessage(''); setCandidates([]); setRawText('');
+    onClose?.();
   }
 
   return <div className="expiry-scanner no-print">
