@@ -114,7 +114,7 @@ test('importa catálogo local e preenche nome e setor ao buscar EAN', async ({ p
   await expect(page.getByLabel('Produto encontrado').getByText('BISCOITO DE CHOCOLATE')).toBeVisible();
   await page.getByRole('button', { name: 'Cadastrar lote deste produto' }).click();
   await expect(page.getByLabel('Nome do produto *')).toHaveValue('BISCOITO DE CHOCOLATE');
-  await expect(page.getByLabel('Código / EAN')).toHaveValue('07890123456780');
+  await expect(page.getByLabel('EAN / código interno *')).toHaveValue('07890123456780');
   await expect(page.getByLabel('Setor *')).toHaveValue('Mercearia');
   await page.getByLabel('Lote *').fill('B-01');
   await page.getByLabel('Data de validade *').fill('2030-12-31');
