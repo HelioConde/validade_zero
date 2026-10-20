@@ -21,7 +21,7 @@ test('não inventa setor e remove EAN duplicado', () => {
 test('recusa arquivo sem colunas, CSV inválido e valores perigosos', () => {
   expect(() => parseProductCatalogCsv('nome;setor\nProduto;Bebidas')).toThrow(/codigo/);
   expect(() => parseDelimitedCsv('"sem fechamento')).toThrow(/aspas/);
-  expect(() => parseProductCatalogCsv('codigo;nome\nabc;=IMPORTXML("X")')).toThrow(/Nenhum produto válido/);
+  expect(() => parseProductCatalogCsv('codigo;nome\n123;"=IMPORTXML(""X"")"')).toThrow(/Nenhum produto válido/);
 });
 
 test('preserva códigos entre sessões sem afetar o estoque', () => {
