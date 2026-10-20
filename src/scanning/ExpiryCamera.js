@@ -17,6 +17,7 @@ export default function ExpiryCamera({ onConfirm }) {
   useEffect(() => {
     if (!preview) return undefined;
     let cancelled = false;
+    const video = videoRef.current;
     async function openCamera() {
       try {
         if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) {
@@ -42,7 +43,7 @@ export default function ExpiryCamera({ onConfirm }) {
         streamRef.current.getTracks().forEach(t => t.stop());
         streamRef.current = null;
       }
-      if (videoRef.current) { videoRef.current.pause(); videoRef.current.srcObject = null; }
+      if (video) { video.pause(); video.srcObject = null; }
     };
   }, [preview]);
 

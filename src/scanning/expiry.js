@@ -7,7 +7,7 @@ function isoDate(day, month, year) {
   return parseDateOnly(iso) ? iso : null;
 }
 
-const LABEL = /\b(?:VAL(?:IDADE)?|VENC(?:IMENTO)?|VTO|EXP(?:IRY|IRATION)?|BEST BEFORE)\s*[:.\-]?\s*/gi;
+const LABEL = /\b(?:VAL(?:IDADE)?|VENC(?:IMENTO)?|VTO|EXP(?:IRY|IRATION)?|BEST BEFORE)\s*[.:-]?\s*/gi;
 const MADE = /\b(?:FAB(?:RICA(?:CAO|ÇÃO)?)?|PROD(?:U(?:C|Ç)AO|UCTION)?|MFG|LOTE|LOT)\b/i;
 const DATE = /\b(\d{1,2})\s*[./-]\s*(\d{1,2})\s*[./-]\s*(\d{2}|\d{4})\b|\b(\d{4})\s*[./-]\s*(\d{1,2})\s*[./-]\s*(\d{1,2})\b/g;
 
