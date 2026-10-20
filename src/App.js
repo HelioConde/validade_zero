@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import './App.css';
 import Icon from './components/Icon';
+import { CLOUD_ENABLED, cloudApi, restoreSession, signIn, signOut, signUp } from './cloud/api';
 import { MAX_CATALOG_CSV_BYTES, findProductByCode, loadCatalog, parseProductCatalogCsv, saveCatalog } from './domain/catalogo';
 import {
   STORAGE_KEY, SECTORS, createBackup, formatDate, isValidEntry, parseBackup,
@@ -144,9 +145,13 @@ function Metric({ name, value, detail, icon, kind, onClick }) {
   </button>;
 }
 
-export default function App() {
-  const [entries, setEntries] = useState(() => readEntries(window.localStorage));
-  const [catalog, setCatalog] = useState(() => loadCatalog(window.localStorage));
+function InventoryApp({ cloud = null, user = null, onSignOut = null }) {
+  const [entries, setEntries] = useState(() => cloud ? [] : readEntries(window.localStorage));
+  const [cloudCount, setCloudCount] = useState(0);
+  const [cloudBusy, setCloudBusy] = useState(Boolean(cloud));
+  const [localMigrated, setLocalMigrated] = useState(false);
+  const localLots = cloud && !localMigrated ? readEntries(window.localStorage) : [];
+  const [catalog, setCatalog] = useState(() => cloud ? [] : loadCatalog(window.localStorage));
   const [catalogCode, setCatalogCode] = useState('');
   const [catalogFound, setCatalogFound] = useState(null);
   const [catalogNotice, setCatalogNotice] = useState('');
@@ -161,6 +166,23 @@ export default function App() {
   const [feedback, setFeedback] = useState('');
   const backupInputRef = useRef(null);
   const counts = useMemo(() => summarize(entries), [entries]);
+  useEffect(() => {
+    if (!cloud) return;
+    let active = true;
+    (async () => {
+      try {
+        const [items, count] = await Promise.all([cloud.listLots(), cloud.countCatalog()]);
+        if (!active) return;
+        setEntries(items);
+        setCloudCount(count);
+        setFeedback('');
+      } catch (error) {
+        if (active) setFeedback('Erro ao carregar dados da nuvem: ' + error.message + '. Nenhum dado foi substituído.');
+      } finally { if (active) setCloudBusy(false); }
+    })();
+    return () => { active = false; };
+  }, [cloud, user?.id]);
+
   const visible = useMemo(() => sortByExpiry(entries).filter(entry => {
     const matchingFilter = filter === 'all' || statusOf(entry.expiration) === filter;
     const matchingSector = sector === 'all' || sector === entry.sector;
@@ -199,27 +221,37 @@ export default function App() {
   async function importCatalog(event) {
     const file = event.target.files?.[0];
     if (!file) return;
+    setCloudBusy(Boolean(cloud));
     try {
       if (file.size > MAX_CATALOG_CSV_BYTES) throw new Error('O CSV deve ter no máximo 8 MB.');
       const parsed = parseProductCatalogCsv(await file.text());
-      if (catalog.length && !window.confirm('Substituir o catálogo local de ' + catalog.length + ' produto(s) por ' + parsed.products.length + ' produto(s)? Os lotes cadastrados não serão alterados.')) return;
-      saveCatalog(window.localStorage, parsed.products);
-      setCatalog(parsed.products);
+      if (cloud) {
+        if (!window.confirm('Importar ou atualizar ' + parsed.products.length.toLocaleString('pt-BR') + ' produtos na nuvem? Os lotes e fotos existentes serão preservados.')) return;
+        await cloud.importProducts(parsed.products, n => setCatalogNotice('Enviando ao Supabase: ' + n.toLocaleString('pt-BR') + ' / ' + parsed.products.length.toLocaleString('pt-BR') + ' produtos.'));
+        setCloudCount(await cloud.countCatalog());
+      } else {
+        if (catalog.length && !window.confirm('Substituir o catálogo local de ' + catalog.length + ' produto(s) por ' + parsed.products.length + ' produto(s)? Os lotes cadastrados não serão alterados.')) return;
+        saveCatalog(window.localStorage, parsed.products);
+        setCatalog(parsed.products);
+      }
       setCatalogFound(null);
       setCatalogNotice('Catálogo importado: ' + parsed.products.length.toLocaleString('pt-BR') + ' produtos. ' + parsed.invalid + ' linhas inválidas e ' + parsed.duplicates + ' códigos repetidos foram ignorados.');
     } catch (error) {
-      setCatalogNotice('Não foi possível importar o catálogo: ' + (error instanceof Error ? error.message : 'arquivo inválido.'));
+      setCatalogNotice('Falha na importação: ' + error.message + (cloud ? '. Produtos enviados em lotes anteriores podem ter sido salvos; você pode reenviar o mesmo arquivo.' : ''));
     } finally {
+      setCloudBusy(false);
       event.target.value = '';
     }
   }
 
-  function searchCatalog(event) {
+  async function searchCatalog(event) {
     event.preventDefault();
     const code = catalogCode.trim();
-    const found = findProductByCode(catalog, code);
-    setCatalogFound(found);
-    setCatalogNotice(found ? 'Produto encontrado. Confira os dados antes de registrar a validade.' : 'Código não encontrado neste catálogo. Verifique a leitura ou cadastre o lote manualmente.');
+    try {
+      const found = cloud ? await cloud.findProduct(code) : findProductByCode(catalog, code);
+      setCatalogFound(found);
+      setCatalogNotice(found ? 'Produto encontrado. Confira os dados antes de registrar a validade.' : 'Código não encontrado neste catálogo. Verifique a leitura ou cadastre o lote manualmente.');
+    } catch (error) { setCatalogFound(null); setCatalogNotice('Não foi possível consultar o Supabase: ' + error.message); }
   }
 
   function createLotFromCatalog() {
@@ -236,19 +268,50 @@ export default function App() {
       setFormDirty(false);
       setShowForm(false);
     } catch {
-      setFeedback('Não foi possível salvar. Verifique se o armazenamento do navegador está disponível e tente novamente.');
+      setFeedback('Não foi possível salvar. Verifique o armazenamento do navegador.');
     }
   }
 
-  function save(entry) {
+  async function save(entry) {
+    if (cloud) {
+      setCloudBusy(true);
+      try {
+        await cloud.upsertLot(entry, Boolean(editing));
+        setEntries(await cloud.listLots());
+        setFeedback(editing ? 'Lote atualizado na nuvem.' : 'Lote salvo na nuvem.');
+        setEditing(null); setPrefill(null); setFormDirty(false); setShowForm(false);
+      } catch (error) {
+        setFeedback('Erro ao salvar na nuvem: ' + error.message + '. O formulário foi mantido.');
+      } finally { setCloudBusy(false); }
+      return;
+    }
     const next = editing ? entries.map(existing => existing.id === editing.id ? entry : existing) : [entry, ...entries];
     persist(next, editing ? 'Lote atualizado com sucesso.' : 'Lote cadastrado com sucesso.');
   }
 
-  function remove(entry) {
-    if (window.confirm('Excluir o lote ' + entry.batch + ' de ' + entry.name + '? Esta ação não pode ser desfeita.')) {
+  async function remove(entry) {
+    if (!window.confirm('Excluir o lote ' + entry.batch + ' de ' + entry.name + '? Esta ação não pode ser desfeita.')) return;
+    if (cloud) {
+      setCloudBusy(true);
+      try { await cloud.deleteLot(entry.id); setEntries(await cloud.listLots()); setFeedback('Lote excluído na nuvem.'); }
+      catch (error) { setFeedback('Erro ao excluir na nuvem: ' + error.message); }
+      finally { setCloudBusy(false); }
+    } else {
       persist(entries.filter(item => item.id !== entry.id), 'Lote excluído.');
     }
+  }
+
+  async function migrateExistingLots() {
+    if (!cloud || !localLots.length) return;
+    if (!window.confirm('Enviar ' + localLots.length + ' lote(s) deste navegador para sua conta Supabase? A migração não exclui o backup local nem sobrescreve IDs já existentes.')) return;
+    setCloudBusy(true);
+    try {
+      await cloud.migrateLocalLots(localLots);
+      setEntries(await cloud.listLots());
+      setLocalMigrated(true);
+      setFeedback('Migração concluída. Os dados originais continuam salvos neste navegador.');
+    } catch (error) { setFeedback('Migração não concluída: ' + error.message + '. Alguns lotes podem ter sido importados. Repita com segurança.'); }
+    finally { setCloudBusy(false); }
   }
 
   function download(name, content, type) {
@@ -280,12 +343,22 @@ export default function App() {
     try {
       if (file.size > 2 * 1024 * 1024) throw new Error('O arquivo excede 2 MB.');
       const imported = parseBackup(await file.text());
-      if (!window.confirm('Restaurar ' + imported.length + ' lote(s)? Os registros atuais serão substituídos.')) return;
-      persist(imported, 'Backup restaurado: ' + imported.length + ' lote(s).');
+      if (cloud) {
+        if (!window.confirm('Adicionar ' + imported.length + ' lote(s) ao Supabase? Lotes já existentes com mesmo ID serão preservados.')) return;
+        setCloudBusy(true);
+        await cloud.migrateLocalLots(imported);
+        setEntries(await cloud.listLots());
+        setFeedback('Backup enviado à nuvem: ' + imported.length + ' lote(s) processados.');
+        setCloudBusy(false);
+      } else {
+        if (!window.confirm('Restaurar ' + imported.length + ' lote(s)? Os registros atuais serão substituídos.')) return;
+        persist(imported, 'Backup restaurado: ' + imported.length + ' lote(s).');
+      }
       setSearch(''); setSector('all'); setFilter('all');
     } catch (error) {
       setFeedback('Não foi possível restaurar: ' + (error instanceof Error ? error.message : 'arquivo inválido.'));
     } finally {
+      setCloudBusy(false);
       event.target.value = '';
     }
   }
@@ -316,14 +389,17 @@ export default function App() {
         </nav>
         <div className="sidebar__footer">
           <span className="sidebar__footer-icon"><Icon name="shield" size={20}/></span>
-          <div><strong>Modo local</strong><p>Dados salvos somente neste navegador.</p></div>
+          <div><strong>{cloud ? 'Nuvem protegida' : 'Modo local'}</strong><p>{cloud ? 'Dados vinculados à sua conta.' : 'Dados salvos somente neste navegador.'}</p></div>
         </div>
       </aside>
 
       <div className="workspace">
         <header className="topbar no-print">
           <div className="breadcrumbs"><span>Operação</span><Icon name="chevron" size={15}/><strong>Controle de validade</strong></div>
-          <span className="topbar__pill"><span className="online-dot"/> Armazenamento local</span>
+          <div className="topbar__right">
+            <span className="topbar__pill"><span className="online-dot"/> {cloud ? 'Supabase conectado' : 'Armazenamento local'}</span>
+            {cloud && <button type="button" className="btn btn--outline" onClick={onSignOut} aria-label="Sair da conta">Sair</button>}
+          </div>
         </header>
         <main id="conteudo" className="main" tabIndex={-1}>
           <header className="heading">
@@ -350,7 +426,9 @@ export default function App() {
               {atRisk ? 'Ver prioridades' : 'Ver todos'} <Icon name="arrow" size={17}/>
             </button>
           </section>
-          <p className="privacy-hint"><Icon name="info" size={16}/> Versão de demonstração local: sem sincronização entre funcionários e sem substituição dos procedimentos oficiais de segurança alimentar.</p>
+          <p className="privacy-hint"><Icon name="info" size={16}/> {cloud ? 'Dados salvos na nuvem e privados por usuário. Contas diferentes ainda não compartilham o mesmo estoque. O sistema não substitui procedimentos oficiais de segurança alimentar.' : 'Versão de demonstração local: sem sincronização entre funcionários e sem substituição dos procedimentos oficiais de segurança alimentar.'}</p>
+          {cloud && localLots.length > 0 && <div className="legacy-transfer"><span>{localLots.length} lote(s) antigos encontrados neste navegador.</span><button className="btn btn--outline" type="button" disabled={cloudBusy} onClick={migrateExistingLots}>Migrar lotes para a nuvem</button></div>}
+          {cloudBusy && <p role="status" className="cloud-loading">Sincronizando dados com o Supabase…</p>}
 
           <section className="catalog-panel no-print" aria-labelledby="catalog-title">
             <div className="catalog-panel__head">
@@ -360,8 +438,8 @@ export default function App() {
                 <p>Digite ou leia o EAN com um leitor conectado para preencher o cadastro do lote.</p>
               </div>
               <div className="catalog-panel__actions">
-                <span className="catalog-counter">{catalog.length.toLocaleString('pt-BR')} produto(s) na base local</span>
-                <button type="button" className="btn btn--outline" onClick={() => catalogInputRef.current?.click()}><Icon name="upload" size={17}/>Importar catálogo CSV</button>
+                <span className="catalog-counter">{(cloud ? cloudCount : catalog.length).toLocaleString('pt-BR')} produto(s) {cloud ? 'na nuvem' : 'na base local'}</span>
+                <button type="button" className="btn btn--outline" disabled={cloudBusy} onClick={() => catalogInputRef.current?.click()}><Icon name="upload" size={17}/>Importar catálogo CSV</button>
                 <input type="file" ref={catalogInputRef} className="sr-only" tabIndex={-1}
                   aria-label="Arquivo CSV do catálogo" accept=".csv,text/csv" onChange={importCatalog}/>
               </div>
@@ -382,7 +460,7 @@ export default function App() {
               </div>
               <button type="button" className="btn btn--primary" onClick={createLotFromCatalog}><Icon name="plus" size={17}/>Cadastrar lote deste produto</button>
             </div>}
-            <p className="catalog-privacy"><Icon name="shield" size={15}/> Arquivo CSV e produtos ficam neste navegador. Nada é enviado automaticamente ao GitHub ou a um servidor. Não há sincronização entre dispositivos.</p>
+            <p className="catalog-privacy"><Icon name="shield" size={15}/> {cloud ? 'Catálogo salvo em sua conta Supabase; somente usuários autorizados por políticas de acesso podem consultá-lo. Não fica publicado no GitHub.' : 'Arquivo CSV e produtos ficam neste navegador. Nada é enviado automaticamente ao GitHub ou a um servidor. Não há sincronização entre dispositivos.'}</p>
           </section>
 
           {feedback && <div className="feedback" role="status" aria-live="polite"><Icon name="info" size={17}/><span>{feedback}</span><button type="button" aria-label="Fechar aviso" onClick={() => setFeedback('')}><Icon name="close" size={18}/></button></div>}
@@ -400,11 +478,11 @@ export default function App() {
                 <p>Gerencie e acompanhe todos os lotes em um só lugar.</p>
               </div>
               <div className="list-actions no-print" aria-label="Exportação e backup">
-                <button type="button" className="btn btn--outline" onClick={downloadBackup} disabled={!entries.length}><Icon name="download" size={17}/>Backup</button>
+                <button type="button" className="btn btn--outline" onClick={downloadBackup} disabled={cloudBusy || !entries.length}><Icon name="download" size={17}/>Backup</button>
                 <button type="button" className="btn btn--outline" onClick={() => backupInputRef.current?.click()}><Icon name="upload" size={17}/>Restaurar</button>
                 <input className="sr-only" type="file" accept=".json,application/json" ref={backupInputRef} onChange={restoreBackup} aria-label="Selecionar backup JSON" tabIndex={-1}/>
-                <button type="button" className="btn btn--outline" onClick={exportCsv} disabled={!entries.length}><Icon name="file" size={17}/>CSV</button>
-                <button type="button" className="btn btn--outline" onClick={() => window.print()} disabled={!entries.length}><Icon name="printer" size={17}/>Imprimir</button>
+                <button type="button" className="btn btn--outline" onClick={exportCsv} disabled={cloudBusy || !entries.length}><Icon name="file" size={17}/>CSV</button>
+                <button type="button" className="btn btn--outline" onClick={() => window.print()} disabled={cloudBusy || !entries.length}><Icon name="printer" size={17}/>Imprimir</button>
               </div>
             </header>
             <div className="filters no-print">
@@ -450,4 +528,66 @@ export default function App() {
       </div>
     </div>
   );
+}
+
+
+function CloudEntry() {
+  const [user, setUser] = useState(undefined);
+  const [mode, setMode] = useState('login');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [working, setWorking] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    restoreSession().then(restored => { if (active) setUser(restored); })
+      .catch(() => { if (active) setUser(null); });
+    return () => { active = false; };
+  }, []);
+
+  async function submit(event) {
+    event.preventDefault();
+    setError(''); setWorking(true);
+    try {
+      if (mode === 'signup') {
+        const result = await signUp(email.trim(), password);
+        if (result.confirmed) setUser(result.user);
+        else { setMode('login'); setPassword(''); setError('Confira seu e-mail e confirme sua conta antes de entrar.'); }
+      } else setUser(await signIn(email.trim(), password));
+    } catch (cause) {
+      setError(cause.message || 'Falha de autenticação.');
+    } finally { setWorking(false); }
+  }
+  async function logout() {
+    try { await signOut(); } catch { /* sessão local será apagada mesmo se a rede falhar */ }
+    setUser(null); setPassword('');
+  }
+
+  if (user === undefined) return <main className="auth-screen"><p role="status">Verificando sua sessão Supabase…</p></main>;
+  if (user) return <InventoryApp key={user.id} cloud={cloudApi} user={user} onSignOut={logout}/>;
+  return <main className="auth-screen">
+    <section className="auth-card" aria-labelledby="auth-title">
+      <span className="auth-mark"><Icon name="shield" size={25}/></span>
+      <p className="eyebrow">VALIDADE ZERO / NUVEM SEGURA</p>
+      <h1 id="auth-title">{mode === 'signup' ? 'Criar conta' : 'Entrar no Validade Zero'}</h1>
+      <p>Seus produtos e lotes ficam protegidos na sua conta Supabase. O catálogo não é público.</p>
+      <form className="auth-form" onSubmit={submit}>
+        <label htmlFor="cloud-email">E-mail</label>
+        <input id="cloud-email" type="email" autoComplete="email" required value={email} onChange={e => setEmail(e.target.value)}/>
+        <label htmlFor="cloud-password">Senha</label>
+        <input id="cloud-password" type="password" minLength={8} autoComplete={mode === 'signup' ? 'new-password' : 'current-password'} required value={password} onChange={e => setPassword(e.target.value)}/>
+        {error && <p className="auth-error" role="status">{error}</p>}
+        <button className="btn btn--primary" type="submit" disabled={working}>{working ? 'Aguarde…' : mode === 'signup' ? 'Criar conta' : 'Entrar'}</button>
+      </form>
+      <button type="button" className="auth-switch" onClick={() => { setMode(mode === 'signup' ? 'login' : 'signup'); setError(''); }}>
+        {mode === 'signup' ? 'Já possui conta? Entrar' : 'Não possui conta? Criar conta'}
+      </button>
+      <small>A conta usa o Supabase Auth. O acesso a produtos e lotes é individual nesta versão.</small>
+    </section>
+  </main>;
+}
+
+export default function App() {
+  return CLOUD_ENABLED ? <CloudEntry/> : <InventoryApp/>;
 }

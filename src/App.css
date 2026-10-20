@@ -234,3 +234,20 @@ tbody tr:hover { background: #f8f8f9; }
   .catalog-match .btn { width:100%;margin-top:14px;white-space:normal; }
 }
 @media print { .catalog-panel { display:none!important; } }
+
+.topbar__right { display:flex;align-items:center;gap:10px; }
+.cloud-loading { color:var(--ink-secondary);font-weight:650;margin:12px 0; }
+.legacy-transfer { display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 16px;margin-bottom:17px;border:1px solid var(--border);border-radius:11px;background:var(--surface-subtle);font-size:12px; }
+.auth-screen { display:grid;place-items:center;min-height:100vh;padding:24px;background:var(--surface-canvas); }
+.auth-card { width:min(100%,420px);background:white;padding:30px;border:1px solid var(--border);box-shadow:var(--shadow-raised);border-radius:18px; }
+.auth-mark { display:grid;place-items:center;width:46px;height:46px;background:#151516;color:white;border-radius:13px;margin-bottom:22px; }
+.auth-card h1 {font-size:27px;letter-spacing:-.8px;color:var(--ink-strong);margin:0 0 9px;}
+.auth-card > p:not(.eyebrow) {color:var(--ink-secondary);font-size:13px;margin:0 0 22px;}
+.auth-form {display:grid;gap:10px;}
+.auth-form label {font-weight:750;font-size:12px;margin-top:6px;}
+.auth-form input {width:100%;min-height:48px;padding:11px 13px;border:1px solid var(--border);border-radius:10px;font-size:16px;}
+.auth-form .btn {margin-top:12px;min-height:48px;font-size:14px;}
+.auth-error {background:#fff4eb;color:#784318;border-radius:9px;padding:11px;font-size:12px;margin:4px 0;}
+.auth-switch {background:transparent;border:0;text-decoration:underline;font-weight:700;color:var(--ink);padding:15px 0;}
+.auth-card small {display:block;color:var(--ink-secondary);font-size:11px;}
+@media (max-width:620px) { .topbar__right .topbar__pill {display:none;} .legacy-transfer {display:block;} .legacy-transfer button {margin-top:12px;width:100%;white-space:normal;} .auth-card {padding:22px 19px;} }

@@ -89,3 +89,18 @@ A tela oferece **Importar catálogo CSV** e **Identificação rápida do produto
 6. Importação substitui apenas o catálogo neste navegador; não apaga lotes já cadastrados.
 
 Limites: CSV até 8 MB, até 30 mil registros, sujeito a cota do navegador, sem autenticação, fotos, OCR nem sincronização. A câmera do celular e OCR de validade ficam para as próximas etapas. Nenhuma base real foi publicada no repositório.
+
+
+## Persistência Supabase (produção)
+
+O GitHub Pages usa Supabase no build de produção com uma chave **publishable** (pública, não secreta). Duas tabelas exclusivas, `public.validadezero_catalogo` e `public.validadezero_lotes`, possuem políticas RLS vinculadas a `auth.uid()`. Cada usuário acessa somente os seus registros; não existe sincronização entre contas de funcionários nesta versão.
+
+- Entre com e-mail e senha, ou crie conta e confirme e-mail quando solicitado. Caso o e-mail de confirmação não volte ao site, configure `https://helioconde.github.io/validade_zero/` em **Authentication > URL Configuration > Redirect URLs** no Supabase.
+- Ao autenticar, importe o catálogo CSV corrigido. A importação salva lotes de 200 produtos e atualiza registros de mesmo EAN, mantendo `photo_path` sem alteração. O arquivo real **não é publicado** no GitHub.
+- Para migrar lotes que já existiam no navegador, use **Migrar lotes para a nuvem**. A operação preserva os registros locais como backup e ignora IDs já cadastrados.
+- Na nuvem, cadastrar, editar, excluir, pesquisar, exportar e restaurar lotes usa Supabase; restauração é **aditiva**, sem excluir lotes antigos.
+- Caso fique sem internet, as operações remotas mostram erro e não gravam alterações apenas no navegador; reconecte-se e repita.
+- Em desenvolvimento local, sem `.env.production`, o modo legado mantém armazenamento local. Os testes Playwright usam `REACT_APP_CLOUD_MODE=off` para simular esse modo sem credenciais.
+- Nunca utilize `service_role` ou chave `sb_secret_` no navegador, `.env.production` nem em GitHub Pages.
+
+Detalhes em [docs/SUPABASE.md](docs/SUPABASE.md).
