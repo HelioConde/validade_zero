@@ -275,3 +275,41 @@ test('migração para conta autenticada preserva dados locais sem sobrescrever n
   expect(photoPreserved.body).not.toContain('photo_path');
   expect(await page.evaluate(() => localStorage.getItem('validade-zero:catalogo:v1') !== null)).toBeTruthy();
 });
+
+
+test('busca EAN no catálogo central do servidor sem login nem importação CSV', async ({page}) => {
+  const requests=[];
+  await page.route('**/rest/v1/validadezero_catalogo_central?**', async route=>{
+    requests.push(route.request().url());
+    await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify([{
+      code:'7898276970072',name:'ESPUMANTE CASA VALDUGA 750ML 130 ANOS',
+      sector:'Bebidas',needs_review:false
+    }])});
+  });
+  await expect(page.getByRole('region', {name:'Modo de demonstração local'})).toBeVisible();
+  await page.getByLabel('Código EAN / código interno').fill('7898276970072');
+  await page.getByRole('button',{name:'Buscar produto'}).click();
+  await expect(page.getByRole('region',{name:'Produto encontrado'}).getByText('ESPUMANTE CASA VALDUGA 750ML 130 ANOS')).toBeVisible();
+  await expect(page.getByText('Fonte: catálogo central do servidor')).toBeVisible();
+  expect(requests).toHaveLength(1);
+  await page.getByRole('button',{name:'Cadastrar lote deste produto'}).click();
+  await expect(page.getByLabel('Nome do produto *')).toHaveValue('ESPUMANTE CASA VALDUGA 750ML 130 ANOS');
+  await expect(page.getByLabel('Setor *')).toHaveValue('Bebidas');
+  await page.getByLabel('Lote *').fill('EAN-001');
+  await page.getByLabel('Data de validade *').fill('2030-12-31');
+  await page.getByRole('button',{name:'Cadastrar lote',exact:true}).click();
+  await expect(page.getByRole('region',{name:'Tabela de lotes'}).getByText('ESPUMANTE CASA VALDUGA 750ML 130 ANOS')).toBeVisible();
+});
+
+test('falha do catálogo central não impede usar lotes locais', async ({page}) => {
+  await page.route('**/rest/v1/validadezero_catalogo_central?**',route=>route.abort());
+  await page.getByLabel('Código EAN / código interno').fill('7898276970072');
+  await page.getByRole('button',{name:'Buscar produto'}).click();
+  await expect(page.getByText(/Não foi possível consultar o servidor/)).toBeVisible();
+  await page.getByRole('button',{name:/Cadastrar primeiro lote/}).click();
+  await page.getByLabel('Nome do produto *').fill('PRODUTO MANUAL');
+  await page.getByLabel('Lote *').fill('M-001');
+  await page.getByLabel('Data de validade *').fill('2030-12-31');
+  await page.getByRole('button',{name:'Cadastrar lote',exact:true}).click();
+  await expect(page.getByRole('region',{name:'Tabela de lotes'}).getByText('PRODUTO MANUAL')).toBeVisible();
+});

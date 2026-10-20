@@ -3,6 +3,7 @@ import './App.css';
 import Icon from './components/Icon';
 import BarcodeCamera from './scanning/BarcodeCamera';
 import ProductPhoto from './components/ProductPhoto';
+import { findCentralProduct, canSearchCentralCatalog } from './cloud/centralCatalog';
 import ExpiryCamera from './scanning/ExpiryCamera';
 import { CLOUD_ENABLED, cloudApi, hasStoredCloudSession, restoreSession, signIn, signOut, signUp } from './cloud/api';
 import { MAX_CATALOG_CSV_BYTES, findProductByCode, loadCatalog, parseProductCatalogCsv, saveCatalog } from './domain/catalogo';
@@ -160,6 +161,8 @@ function InventoryApp({ cloud = null, user = null, onSignOut = null, onActivateC
   const [catalogCode, setCatalogCode] = useState('');
   const [scannerOpen, setScannerOpen] = useState(false);
   const [catalogFound, setCatalogFound] = useState(null);
+  const [catalogSearching, setCatalogSearching] = useState(false);
+  const catalogSearchId = useRef(0);
   const [catalogNotice, setCatalogNotice] = useState('');
   const [prefill, setPrefill] = useState(null);
   const catalogInputRef = useRef(null);
@@ -251,14 +254,40 @@ function InventoryApp({ cloud = null, user = null, onSignOut = null, onActivateC
   }
 
   async function lookupCatalogCode(code) {
-    const cleanCode = String(code).trim();
+    const cleanCode = String(code || '').trim();
+    const thisSearch = ++catalogSearchId.current;
     setCatalogCode(cleanCode);
     setCatalogFound(null);
+    if (!/^\d{1,14}$/.test(cleanCode)) {
+      setCatalogNotice('Informe um EAN ou código interno numérico com até 14 dígitos.');
+      return;
+    }
+    setCatalogSearching(true);
+    setCatalogNotice('Pesquisando produto…');
     try {
-      const found = cloud ? await cloud.findProduct(cleanCode) : findProductByCode(catalog, cleanCode);
+      const ownProduct = cloud
+        ? await cloud.findProduct(cleanCode)
+        : findProductByCode(catalog, cleanCode);
+      const found = ownProduct
+        ? { ...ownProduct, source: cloud ? 'private' : 'local' }
+        : await findCentralProduct(cleanCode);
+      if (catalogSearchId.current !== thisSearch) return;
       setCatalogFound(found);
-      setCatalogNotice(found ? 'Produto encontrado. Confira os dados antes de registrar a validade.' : 'Código não encontrado neste catálogo. Verifique a leitura ou cadastre o lote manualmente.');
-    } catch (error) { setCatalogFound(null); setCatalogNotice('Não foi possível consultar o Supabase: ' + error.message); }
+      if (found) {
+        setCatalogNotice(found.source === 'central'
+          ? 'Produto encontrado no catálogo central do servidor. Confira o nome e o setor antes de registrar a validade.'
+          : 'Produto encontrado no seu catálogo. Confira os dados antes de registrar a validade.');
+      } else {
+        setCatalogNotice('Código não encontrado. Confira o EAN ou cadastre o lote manualmente.');
+      }
+    } catch (error) {
+      if (catalogSearchId.current !== thisSearch) return;
+      setCatalogFound(null);
+      setCatalogNotice('Não foi possível consultar o servidor: ' + error.message +
+        ' Você ainda pode cadastrar um lote manualmente.');
+    } finally {
+      if (catalogSearchId.current === thisSearch) setCatalogSearching(false);
+    }
   }
 
   function searchCatalog(event) {
@@ -278,6 +307,22 @@ function InventoryApp({ cloud = null, user = null, onSignOut = null, onActivateC
 
   function photoSaved(code, photoPath) {
     setCatalogFound(current => current?.code === code ? { ...current, photoPath } : current);
+  }
+
+  async function saveCentralToMyCatalog() {
+    const item = catalogFound;
+    if (!cloud || !item || item.source !== 'central') return;
+    setCatalogSearching(true);
+    try {
+      const result = await cloud.adoptCentralProduct(item);
+      if (catalogFound?.code === item.code) {
+        setCatalogFound({ ...result, source: 'private' });
+        setCloudCount(await cloud.countCatalog());
+      }
+      setCatalogNotice('Produto adicionado à sua conta. Agora você pode cadastrar uma fotografia privada.');
+    } catch (error) {
+      setCatalogNotice('Não foi possível adicionar o produto à conta: ' + error.message);
+    } finally { setCatalogSearching(false); }
   }
 
   function persist(next, message) {
@@ -487,7 +532,7 @@ function InventoryApp({ cloud = null, user = null, onSignOut = null, onActivateC
               <div>
                 <span className="eyebrow">CADASTRO INTELIGENTE / EAN</span>
                 <h2 id="catalog-title">Identificação rápida do produto</h2>
-                <p>Digite ou leia o EAN com um leitor conectado para preencher o cadastro do lote.</p>
+                <p>Digite ou escaneie o EAN. Se não estiver no seu catálogo, consultaremos a base central no Supabase, mesmo sem login.</p>
               </div>
               <div className="catalog-panel__actions">
                 <span className="catalog-counter">{(cloud ? cloudCount : catalog.length).toLocaleString('pt-BR')} produto(s) {cloud ? 'na nuvem' : 'na base local'}</span>
@@ -496,13 +541,14 @@ function InventoryApp({ cloud = null, user = null, onSignOut = null, onActivateC
                   aria-label="Arquivo CSV do catálogo" accept=".csv,text/csv" onChange={importCatalog}/>
               </div>
             </div>
+            <p className="catalog-server-label"><Icon name="check" size={15}/> {canSearchCentralCatalog() ? 'Busca no catálogo central online disponível sem login' : 'Busca local — servidor não configurado neste ambiente'}</p>
             <form className="catalog-search" onSubmit={searchCatalog}>
               <label htmlFor="catalog-code">Código EAN / código interno</label>
               <div className="catalog-search__controls">
                 <input id="catalog-code" type="text" inputMode="numeric" autoComplete="off"
                   placeholder="Ex.: 7891234567895" value={catalogCode} maxLength={14}
                   onChange={event => { setCatalogCode(event.target.value); setCatalogFound(null); setCatalogNotice(''); }}/>
-                <button className="btn btn--primary" type="submit"><Icon name="search" size={17}/>Buscar produto</button>
+                <button className="btn btn--primary" type="submit" disabled={catalogSearching}><Icon name="search" size={17}/>{catalogSearching ? 'Pesquisando…' : 'Buscar produto'}</button>
                 <button className="btn btn--outline" type="button" onClick={() => setScannerOpen(true)} aria-label="Escanear EAN com a câmera"><Icon name="scan" size={19}/>Escanear EAN</button>
               </div>
             </form>
@@ -510,14 +556,22 @@ function InventoryApp({ cloud = null, user = null, onSignOut = null, onActivateC
             {catalogNotice && <p className="catalog-notice" role="status" aria-live="polite">{catalogNotice}</p>}
             {catalogFound && <div className="catalog-match" aria-label="Produto encontrado">
               <div><strong>{catalogFound.name}</strong><small>Código: {catalogFound.code} · Setor: {catalogFound.sector || 'não informado'}</small>
+                <small>{catalogFound.source === 'central' ? 'Fonte: catálogo central do servidor' : 'Fonte: seu catálogo'}</small>
                 {(catalogFound.review || !catalogFound.sector) && <small className="catalog-match__warning">Confira {catalogFound.review ? 'o nome, código e ' : ''}o setor antes de salvar.</small>}
               </div>
               <button type="button" className="btn btn--primary" onClick={createLotFromCatalog}><Icon name="plus" size={17}/>Cadastrar lote deste produto</button>
             </div>}
-            {catalogFound && cloud && user?.id && <ProductPhoto key={catalogFound.code} product={catalogFound}
+            {catalogFound && cloud && catalogFound.source === 'central' && <div className="catalog-central-photo">
+              <span>Para salvar uma foto privada deste produto, adicione-o primeiro à sua conta.</span>
+              <button type="button" className="btn btn--outline" disabled={catalogSearching}
+                onClick={saveCentralToMyCatalog}>Adicionar ao meu catálogo e habilitar foto</button>
+            </div>}
+            {catalogFound && cloud && catalogFound.source === 'private' && user?.id && <ProductPhoto key={catalogFound.code} product={catalogFound}
               cloud={cloud} userId={user.id} onPhotoSaved={photoSaved}/>}
             
-            <p className="catalog-privacy"><Icon name="shield" size={15}/> {cloud ? 'Catálogo salvo em sua conta Supabase; somente usuários autorizados por políticas de acesso podem consultá-lo. Não fica publicado no GitHub.' : 'Arquivo CSV e produtos ficam neste navegador. Nada é enviado automaticamente ao GitHub ou a um servidor. Não há sincronização entre dispositivos.'}</p>
+            <p className="catalog-privacy"><Icon name="shield" size={15}/> {cloud
+              ? 'O catálogo central só disponibiliza nome, EAN e setor. Seus lotes e fotos continuam privados na sua conta Supabase.'
+              : 'A pesquisa de EAN pode consultar o catálogo público central pela internet. Seus lotes e o CSV importado continuam somente neste navegador e não são enviados ao servidor.'}</p>
           </section>
 
           {feedback && <div className="feedback" role="status" aria-live="polite"><Icon name="info" size={17}/><span>{feedback}</span><button type="button" aria-label="Fechar aviso" onClick={() => setFeedback('')}><Icon name="close" size={18}/></button></div>}
