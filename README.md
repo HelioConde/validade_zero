@@ -57,3 +57,21 @@ O workflow `.github/workflows/pages.yml` faz testes, build e publicação autom�
 4. O site é público, mas cada navegador mantém seu próprio armazenamento local. Não existe banco de dados compartilhado ainda.
 
 A propriedade `homepage` configura o prefixo `/validade_zero/` no build do Create React App. O fluxo não usa o FTP nem requer PAT ou credenciais de hospedagem.
+
+## Design, acessibilidade e testes de navegador
+
+- Padrão visual: [docs/DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md).
+- Auditoria de UX: [docs/UX_AUDIT.md](docs/UX_AUDIT.md).
+- Componentes e navegação mobile foram revisados com rótulos visíveis, alvos de toque maiores, foco e validação por campo.
+- A verificação `.github/workflows/e2e.yml` executa Playwright (Chromium desktop e mobile), captura screenshots das telas vazia e populada, e publica HTML report/traces como artefato do GitHub Actions.
+
+Para reproduzir localmente, após `npm ci`:
+
+~~~sh
+npm install --no-save --package-lock=false @playwright/test@1.56.1
+npx playwright install chromium
+npx playwright test
+npx playwright show-report
+~~~
+
+O Playwright abre um servidor de desenvolvimento isolado. Para inspecionar os artefatos de CI: GitHub → Actions → Playwright - UX e regressão → execução → `playwright-ux-report`. Em casos de erro, o relatório inclui traces, screenshots e vídeos.
