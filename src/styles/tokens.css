@@ -1,20 +1,22 @@
 :root {
   color-scheme: light;
   --font-body: Inter, "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
-  --surface-canvas: #f5f7f7;
+  /* Identidade: preto e branco, com cores reservadas a alertas operacionais. */
+  --surface-canvas: #f6f6f7;
   --surface-card: #ffffff;
-  --surface-subtle: #f8fbfa;
-  --surface-soft: #ebf6f1;
-  --ink: #163437;
-  --ink-strong: #102b30;
-  --ink-secondary: #536e72;
-  --ink-muted: #60777c;
-  --brand: #0d7665;
-  --brand-hover: #075a4f;
-  --brand-soft: #e3f3eb;
-  --border: #dce6e4;
-  --border-subtle: #eaf0ee;
-  --focus: #0b7568;
+  --surface-subtle: #fafafa;
+  --surface-soft: #f1f1f2;
+  --ink: #262629;
+  --ink-strong: #111113;
+  --ink-secondary: #56565e;
+  --ink-muted: #64646d;
+  --brand: #111111;
+  --brand-hover: #303034;
+  --brand-soft: #f0f0f1;
+  --border: #dedee2;
+  --border-subtle: #ececef;
+  --focus: #111111;
+  /* Cores semânticas permanecem distintas da marca. */
   --danger: #a93337;
   --danger-soft: #fcebed;
   --warning: #946114;
@@ -27,8 +29,8 @@
   --radius-md: 12px;
   --radius-lg: 16px;
   --radius-xl: 20px;
-  --shadow-card: 0 3px 6px rgba(13, 44, 42, .025), 0 14px 36px rgba(13, 44, 42, .04);
-  --shadow-raised: 0 6px 12px rgba(13, 44, 42, .035), 0 18px 42px rgba(13, 44, 42, .075);
+  --shadow-card: 0 3px 6px rgba(10, 10, 12, .025), 0 14px 36px rgba(10, 10, 12, .045);
+  --shadow-raised: 0 6px 12px rgba(10, 10, 12, .035), 0 18px 42px rgba(10, 10, 12, .075);
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
