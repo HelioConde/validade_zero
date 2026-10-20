@@ -71,7 +71,8 @@ test('migra lote e catálogo sem sobrescrever dados existentes na nuvem', async 
   fireEvent.click(screen.getByRole('button', { name: 'Salvar na nuvem' }));
   fireEvent.change(screen.getByLabelText('E-mail'), { target: { value: 'teste@example.com' } });
   fireEvent.change(screen.getByLabelText('Senha'), { target: { value: 'senha-segura' } });
-  fireEvent.click(screen.getByRole('button', { name: 'Entrar', exact: true }));
+  fireEvent.submit(screen.getByRole('button', { name: 'Entrar', exact: true }).closest('form'));
+  await waitFor(() => expect(signIn).toHaveBeenCalledWith('teste@example.com', 'senha-segura'));
   expect(await screen.findByRole('button', { name: 'Migrar dados locais para a nuvem' })).toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', { name: 'Migrar dados locais para a nuvem' }));
   await waitFor(() => expect(cloudApi.migrateLocalCatalog).toHaveBeenCalledTimes(1));
