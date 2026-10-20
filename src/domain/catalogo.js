@@ -78,7 +78,7 @@ export function parseProductCatalogCsv(content) {
     const sectorRaw = sectorIndex >= 0 ? String(cells[sectorIndex] || '').trim() : '';
     const sector = SECTORS.find(value => value.toLowerCase() === sectorRaw.toLowerCase()) || '';
     const reviewRaw = reviewIndex >= 0 ? String(cells[reviewIndex] || '').trim() : '';
-    if (!/^\d{1,14}$/.test(code) || !name || name.length > 120) {
+    if (!/^\d{1,14}$/.test(code) || !name || name.length > 120 || /^[=+@-]/.test(name)) {
       invalid++;
       continue;
     }
