@@ -97,3 +97,38 @@ test('tema principal preto e estados de validade com cores semânticas', async (
   expect(theme.statusWarning).not.toBe(theme.brand);
   await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('content', '#101012');
 });
+
+
+test('importa catálogo local e preenche nome e setor ao buscar EAN', async ({ page }) => {
+  const csv = '\uFEFFcodigo;nome;setor_sugerido;revisar\r\n"07890123456780";"BISCOITO DE CHOCOLATE";"Mercearia";"OK"\r\n"472";"CASTANHA PARA";"";"Revisar"\r\n';
+  await page.getByLabel('Arquivo CSV do catálogo').setInputFiles({
+    name: 'catalogo.csv', mimeType: 'text/csv', buffer: Buffer.from(csv)
+  });
+  await expect(page.getByText(/Catálogo importado: 2 produtos/)).toBeVisible();
+  await page.getByLabel('Código EAN / código interno').fill('07890123456780');
+  await page.getByRole('button', { name: 'Buscar produto' }).click();
+  await expect(page.getByLabel('Produto encontrado').getByText('BISCOITO DE CHOCOLATE')).toBeVisible();
+  await page.getByRole('button', { name: 'Cadastrar lote deste produto' }).click();
+  await expect(page.getByLabel('Nome do produto *')).toHaveValue('BISCOITO DE CHOCOLATE');
+  await expect(page.getByLabel('Código / EAN')).toHaveValue('07890123456780');
+  await expect(page.getByLabel('Setor *')).toHaveValue('Mercearia');
+  await page.getByLabel('Lote *').fill('B-01');
+  await page.getByLabel('Data de validade *').fill('2030-12-31');
+  await page.getByRole('button', { name: 'Cadastrar lote', exact: true }).click();
+  await expect(page.getByRole('region', { name: 'Tabela de lotes' }).getByText('BISCOITO DE CHOCOLATE', { exact: true })).toBeVisible();
+});
+
+test('exige setor manual quando catálogo não possui categoria', async ({ page }) => {
+  const csv = 'codigo;nome;setor_sugerido;revisar\n472;CASTANHA PARA;;Revisar\n';
+  await page.getByLabel('Arquivo CSV do catálogo').setInputFiles({
+    name: 'catalogo.csv', mimeType: 'text/csv', buffer: Buffer.from(csv)
+  });
+  await page.getByLabel('Código EAN / código interno').fill('472');
+  await page.getByRole('button', { name: 'Buscar produto' }).click();
+  await page.getByRole('button', { name: 'Cadastrar lote deste produto' }).click();
+  await expect(page.getByLabel('Setor *')).toHaveValue('');
+  await page.getByLabel('Lote *').fill('L-02');
+  await page.getByLabel('Data de validade *').fill('2030-12-31');
+  await page.getByRole('button', { name: 'Cadastrar lote', exact: true }).click();
+  await expect(page.getByText('Selecione um setor válido.')).toBeVisible();
+});

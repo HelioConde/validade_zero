@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import './App.css';
 import Icon from './components/Icon';
+import { MAX_CATALOG_CSV_BYTES, findProductByCode, loadCatalog, parseProductCatalogCsv, saveCatalog } from './domain/catalogo';
 import {
   STORAGE_KEY, SECTORS, createBackup, formatDate, isValidEntry, parseBackup,
   parseDateOnly, readEntries, sortByExpiry, statusLabel, statusOf, summarize, toCsv
@@ -33,7 +34,7 @@ function Field({ label, required, field, error, children }) {
   );
 }
 
-function EntryForm({ initial, onSave, onCancel, onDirtyChange }) {
+function EntryForm({ initial, onSave, onCancel, onDirtyChange, fromCatalog = false }) {
   const [values, setValues] = useState(initial || EMPTY);
   const [errors, setErrors] = useState({});
   const fields = useRef({});
@@ -85,6 +86,7 @@ function EntryForm({ initial, onSave, onCancel, onDirtyChange }) {
 
   return (
     <form className="entry-form" noValidate onSubmit={submit}>
+      {fromCatalog && <p className="catalog-form-notice" role="note">Dados preenchidos pelo catálogo. Confira o setor sugerido, informe o lote e confirme a validade impressa na embalagem.</p>}
       <div className="form-intro">
         <span className="form-icon"><Icon name="box" size={21}/></span>
         <div><h3>Dados do produto e do lote</h3><p>Preencha os campos obrigatórios para acompanhar a validade.</p></div>
@@ -101,6 +103,7 @@ function EntryForm({ initial, onSave, onCancel, onDirtyChange }) {
         </Field>
         <Field label="Setor" required field="sector" error={errors.sector}>
           <select {...inputProps('sector')} required value={values.sector} onChange={e => update('sector', e.target.value)}>
+            <option value="">Selecione o setor...</option>
             {SECTORS.map(item => <option key={item} value={item}>{item}</option>)}
           </select>
         </Field>
@@ -122,7 +125,7 @@ function EntryForm({ initial, onSave, onCancel, onDirtyChange }) {
       </Field>
       <div className="form-actions">
         <button type="button" className="btn btn--ghost" onClick={onCancel}>Cancelar</button>
-        <button type="submit" className="btn btn--primary"><Icon name="check" size={17}/>{initial ? 'Salvar alterações' : 'Cadastrar lote'}</button>
+        <button type="submit" className="btn btn--primary"><Icon name="check" size={17}/>{initial?.id ? 'Salvar alterações' : 'Cadastrar lote'}</button>
       </div>
     </form>
   );
@@ -143,6 +146,12 @@ function Metric({ name, value, detail, icon, kind, onClick }) {
 
 export default function App() {
   const [entries, setEntries] = useState(() => readEntries(window.localStorage));
+  const [catalog, setCatalog] = useState(() => loadCatalog(window.localStorage));
+  const [catalogCode, setCatalogCode] = useState('');
+  const [catalogFound, setCatalogFound] = useState(null);
+  const [catalogNotice, setCatalogNotice] = useState('');
+  const [prefill, setPrefill] = useState(null);
+  const catalogInputRef = useRef(null);
   const [filter, setFilter] = useState('all');
   const [search, setSearch] = useState('');
   const [sector, setSector] = useState('all');
@@ -178,12 +187,44 @@ export default function App() {
     setFilter(value);
   }
 
-  function openForm(entry = null) {
+  function openForm(entry = null, fromProduct = null) {
     if (!closeForm()) return;
     setEditing(entry);
+    setPrefill(fromProduct);
     setFormDirty(false);
     setShowForm(true);
     setFeedback('');
+  }
+
+  async function importCatalog(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    try {
+      if (file.size > MAX_CATALOG_CSV_BYTES) throw new Error('O CSV deve ter no máximo 8 MB.');
+      const parsed = parseProductCatalogCsv(await file.text());
+      if (catalog.length && !window.confirm('Substituir o catálogo local de ' + catalog.length + ' produto(s) por ' + parsed.products.length + ' produto(s)? Os lotes cadastrados não serão alterados.')) return;
+      saveCatalog(window.localStorage, parsed.products);
+      setCatalog(parsed.products);
+      setCatalogFound(null);
+      setCatalogNotice('Catálogo importado: ' + parsed.products.length.toLocaleString('pt-BR') + ' produtos. ' + parsed.invalid + ' linhas inválidas e ' + parsed.duplicates + ' códigos repetidos foram ignorados.');
+    } catch (error) {
+      setCatalogNotice('Não foi possível importar o catálogo: ' + (error instanceof Error ? error.message : 'arquivo inválido.'));
+    } finally {
+      event.target.value = '';
+    }
+  }
+
+  function searchCatalog(event) {
+    event.preventDefault();
+    const code = catalogCode.trim();
+    const found = findProductByCode(catalog, code);
+    setCatalogFound(found);
+    setCatalogNotice(found ? 'Produto encontrado. Confira os dados antes de registrar a validade.' : 'Código não encontrado neste catálogo. Verifique a leitura ou cadastre o lote manualmente.');
+  }
+
+  function createLotFromCatalog() {
+    if (!catalogFound) return;
+    openForm(null, { ...EMPTY, name: catalogFound.name, code: catalogFound.code, sector: catalogFound.sector || '' });
   }
 
   function persist(next, message) {
@@ -311,13 +352,46 @@ export default function App() {
           </section>
           <p className="privacy-hint"><Icon name="info" size={16}/> Versão de demonstração local: sem sincronização entre funcionários e sem substituição dos procedimentos oficiais de segurança alimentar.</p>
 
+          <section className="catalog-panel no-print" aria-labelledby="catalog-title">
+            <div className="catalog-panel__head">
+              <div>
+                <span className="eyebrow">CADASTRO INTELIGENTE / EAN</span>
+                <h2 id="catalog-title">Identificação rápida do produto</h2>
+                <p>Digite ou leia o EAN com um leitor conectado para preencher o cadastro do lote.</p>
+              </div>
+              <div className="catalog-panel__actions">
+                <span className="catalog-counter">{catalog.length.toLocaleString('pt-BR')} produto(s) na base local</span>
+                <button type="button" className="btn btn--outline" onClick={() => catalogInputRef.current?.click()}><Icon name="upload" size={17}/>Importar catálogo CSV</button>
+                <input type="file" ref={catalogInputRef} className="sr-only" tabIndex={-1}
+                  aria-label="Arquivo CSV do catálogo" accept=".csv,text/csv" onChange={importCatalog}/>
+              </div>
+            </div>
+            <form className="catalog-search" onSubmit={searchCatalog}>
+              <label htmlFor="catalog-code">Código EAN / código interno</label>
+              <div className="catalog-search__controls">
+                <input id="catalog-code" type="text" inputMode="numeric" autoComplete="off"
+                  placeholder="Ex.: 7891234567895" value={catalogCode} maxLength={14}
+                  onChange={event => { setCatalogCode(event.target.value); setCatalogFound(null); setCatalogNotice(''); }}/>
+                <button className="btn btn--primary" type="submit"><Icon name="search" size={17}/>Buscar produto</button>
+              </div>
+            </form>
+            {catalogNotice && <p className="catalog-notice" role="status" aria-live="polite">{catalogNotice}</p>}
+            {catalogFound && <div className="catalog-match" aria-label="Produto encontrado">
+              <div><strong>{catalogFound.name}</strong><small>Código: {catalogFound.code} · Setor: {catalogFound.sector || 'não informado'}</small>
+                {(catalogFound.review || !catalogFound.sector) && <small className="catalog-match__warning">Confira {catalogFound.review ? 'o nome, código e ' : ''}o setor antes de salvar.</small>}
+              </div>
+              <button type="button" className="btn btn--primary" onClick={createLotFromCatalog}><Icon name="plus" size={17}/>Cadastrar lote deste produto</button>
+            </div>}
+            <p className="catalog-privacy"><Icon name="shield" size={15}/> Arquivo CSV e produtos ficam neste navegador. Nada é enviado automaticamente ao GitHub ou a um servidor. Não há sincronização entre dispositivos.</p>
+          </section>
+
           {feedback && <div className="feedback" role="status" aria-live="polite"><Icon name="info" size={17}/><span>{feedback}</span><button type="button" aria-label="Fechar aviso" onClick={() => setFeedback('')}><Icon name="close" size={18}/></button></div>}
 
           {showForm && <section className="form-panel no-print" aria-labelledby="form-title">
             <div className="form-panel__head"><div><span className="eyebrow">MOVIMENTAÇÃO DE ESTOQUE</span><h2 id="form-title">{editing ? 'Editar lote' : 'Cadastrar novo lote'}</h2></div>
               <button type="button" className="icon-button" aria-label="Fechar formulário" onClick={closeForm}><Icon name="close" size={20}/></button>
             </div>
-            <EntryForm key={editing?.id || 'new'} initial={editing} onSave={save} onCancel={closeForm} onDirtyChange={setFormDirty}/>
+            <EntryForm key={editing?.id || prefill?.code || 'new'} initial={editing || prefill} fromCatalog={Boolean(prefill)} onSave={save} onCancel={closeForm} onDirtyChange={setFormDirty}/>
           </section>}
 
           <section className="list-panel" aria-labelledby="list-title">
