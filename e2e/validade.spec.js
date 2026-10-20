@@ -243,7 +243,7 @@ test('migração para conta autenticada preserva dados locais sem sobrescrever n
     });
     if (url.includes('/rest/v1/validadezero_catalogo') && method==='GET') {
       return route.fulfill({ status:200, contentType:'application/json',
-        headers:{'content-range':'0-0/0'}, body:'[]' });
+        headers:{'content-range':'0-0/0', 'access-control-expose-headers':'content-range'}, body:'[]' });
     }
     if (url.includes('/rest/v1/validadezero_lotes') && method==='GET') {
       return route.fulfill({ status:200, contentType:'application/json', body:'[]' });
