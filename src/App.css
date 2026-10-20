@@ -348,3 +348,18 @@ tbody tr:hover { background: #f8f8f9; }
 .expiry-input-wrap > input[type="date"]::-webkit-calendar-picker-indicator { margin-right: 47px; cursor: pointer; }
 .expiry-input-wrap .ean-input-camera { z-index: 1; }
 .field > .expiry-scanner { margin-top: 10px; }
+
+
+/* Guia de enquadramento, foco e zoom: controles aparecem apenas quando suportados pela câmera. */
+.barcode-viewfinder { position: relative; background: #171719; border-radius: 12px; overflow: hidden; }
+.barcode-viewfinder > .scanner-video { width: 100%; aspect-ratio: 4/3; max-height: 330px; object-fit: contain; }
+.barcode-viewfinder__guide { position: absolute; inset: 0; display: flex; justify-content: center; align-items: center; pointer-events: none; }
+.barcode-viewfinder__guide > span { position: relative; border: 2px solid rgba(255,255,255,.95); border-radius: 8px; width: 82%; height: 31%; box-shadow: 0 0 0 200px rgba(0,0,0,.12); }
+.barcode-viewfinder__guide > span::after { content: ''; position: absolute; height: 2px; top: 50%; left: 7%; right: 7%; background: rgba(255,255,255,.55); }
+.scanner-window .scanner-focus-info { font-size: 12px; font-weight: 600; color: var(--ink-secondary); margin: 12px 0; }
+.scanner-controls { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; padding: 8px 0 3px; }
+.scanner-controls .btn { min-height: 44px; }
+.scanner-zoom { display: inline-flex; align-items: center; gap: 9px; font-size: 13px; font-weight: 700; color: var(--ink-strong); }
+.scanner-zoom input[type="range"] { width: min(175px, 32vw); accent-color: #242428; min-height: 35px; }
+.scanner-zoom strong { min-width: 32px; text-align: right; font-variant-numeric: tabular-nums; }
+@media (max-width: 600px) { .barcode-viewfinder > .scanner-video { min-height: 230px; } .scanner-controls { display: grid; grid-template-columns: 1fr; } .scanner-zoom { justify-content: space-between; } .scanner-zoom input[type="range"] { flex: 1; max-width: 250px; } }
