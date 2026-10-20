@@ -21,10 +21,10 @@ module.exports = defineConfig({
     { name: 'mobile-chromium', use: { ...devices['Desktop Chrome'], viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true } }
   ],
   webServer: {
-    command: 'npm start',
+    command: 'npm run build && python3 -m http.server 3000 --bind 127.0.0.1 --directory build',
     url: 'http://127.0.0.1:3000',
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
-    env: { BROWSER: 'none', PORT: '3000', HOST: '127.0.0.1', CI: 'true' }
+    env: { PUBLIC_URL: '/', CI: 'true' }
   }
 });
