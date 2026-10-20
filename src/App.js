@@ -46,7 +46,6 @@ function EntryForm({ initial, onSave, onCancel, onDirtyChange, fromCatalog = fal
   const [lotScannerOpen, setLotScannerOpen] = useState(false);
   const [expiryScannerOpen, setExpiryScannerOpen] = useState(false);
   const [detectedProduct, setDetectedProduct] = useState(null);
-  const [productBusy, setProductBusy] = useState(false);
   const [productNotice, setProductNotice] = useState('');
   const productRequest = useRef(0);
   const fields = useRef({});
@@ -60,11 +59,10 @@ function EntryForm({ initial, onSave, onCancel, onDirtyChange, fromCatalog = fal
     return () => { active = false; };
   }, [initial?.code, onLookupProduct]);
 
-  async function identifyCode(code, fromScanner = false) {
+  async function identifyCode(code) {
     update('code', code);
     const requestId = productRequest.current;
     setDetectedProduct(null);
-    setProductBusy(true);
     setProductNotice('Procurando cadastro e imagem do produto…');
     try {
       const found = await onLookupProduct(code);
@@ -84,7 +82,7 @@ function EntryForm({ initial, onSave, onCancel, onDirtyChange, fromCatalog = fal
       if (requestId === productRequest.current) {
         setProductNotice('Sem consulta online: ' + error.message + '. Você pode continuar manualmente.');
       }
-    } finally { if (requestId === productRequest.current) setProductBusy(false); }
+    }
   }
 
   const photoProduct = isValidProductCode(values.code) && values.name.trim()
@@ -170,7 +168,7 @@ function EntryForm({ initial, onSave, onCancel, onDirtyChange, fromCatalog = fal
             </button>
           </div>
           {lotScannerOpen && <BarcodeCamera
-            onDetected={code => { setLotScannerOpen(false); identifyCode(code, true); fields.current.code?.focus(); }}
+            onDetected={code => { setLotScannerOpen(false); identifyCode(code); fields.current.code?.focus(); }}
             onClose={() => setLotScannerOpen(false)}/>}
         </Field>
         <Field label="Setor" required field="sector" error={errors.sector}>
