@@ -115,7 +115,7 @@ test('importa catálogo local e preenche nome e setor ao buscar EAN', async ({ p
   await page.getByLabel('Lote *').fill('B-01');
   await page.getByLabel('Data de validade *').fill('2030-12-31');
   await page.getByRole('button', { name: 'Cadastrar lote', exact: true }).click();
-  await expect(page.getByText('BISCOITO DE CHOCOLATE', { exact: true })).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Tabela de lotes' }).getByText('BISCOITO DE CHOCOLATE', { exact: true })).toBeVisible();
 });
 
 test('exige setor manual quando catálogo não possui categoria', async ({ page }) => {
