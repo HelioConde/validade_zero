@@ -90,7 +90,7 @@ test('tema principal preto e estados de validade com cores semânticas', async (
       statusWarning: style.getPropertyValue('--warning').trim()
     };
   });
-  expect(theme.brand).toBe('#111111');
+  expect(['#111111', '#111']).toContain(theme.brand);
   expect(theme.sidebar).toBe('rgb(16, 16, 18)');
   expect(theme.primaryButton).toBe('rgb(17, 17, 17)');
   expect(theme.statusDanger).not.toBe(theme.brand);
