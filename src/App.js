@@ -4,6 +4,7 @@ import Icon from './components/Icon';
 import BarcodeCamera from './scanning/BarcodeCamera';
 import ProductPhoto from './components/ProductPhoto';
 import PushSettings from './components/PushSettings';
+import { removeDevicePush } from './push/client';
 import { loadLocalProductPhoto, localProductPhotoPath, localPhotoApi } from './domain/localProductPhotos';
 import { findCentralProduct, canSearchCentralCatalog } from './cloud/centralCatalog';
 import ExpiryCamera from './scanning/ExpiryCamera';
@@ -742,6 +743,7 @@ function CloudEntry({ onTryLocal, initialUser = null }) {
     } finally { setWorking(false); }
   }
   async function logout() {
+    try { await removeDevicePush(cloudApi); } catch { /* sair é permitido mesmo sem rede */ }
     try { await signOut(); } catch { /* sessão local será apagada mesmo se a rede falhar */ }
     setUser(null); setPassword('');
     onTryLocal();

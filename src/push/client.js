@@ -28,10 +28,10 @@ export async function getPushPublicKey(fetcher = fetch) {
 
 export async function enablePush(cloud, userId) {
   if (!pushSupported()) throw new Error('Este navegador não oferece push em segundo plano. No iPhone, instale o site na Tela de Início.');
-  // Pedir permissão somente após clique do usuário.
+  // Verificar primeiro a configuração do servidor; não pedir permissão para um serviço indisponível.
+  const publicKey = await getPushPublicKey();
   const permission = await Notification.requestPermission();
   if (permission !== 'granted') throw new Error('As notificações não foram autorizadas neste navegador.');
-  const publicKey = await getPushPublicKey();
   const swUrl = (process.env.PUBLIC_URL || '') + '/push-sw.js';
   const reg = await navigator.serviceWorker.register(swUrl, { scope: (process.env.PUBLIC_URL || '') + '/' });
   const subscription = await reg.pushManager.getSubscription()
@@ -40,8 +40,20 @@ export async function enablePush(cloud, userId) {
   const json = subscription.toJSON();
   await cloud.upsertPushSubscription(userId, json);
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/Sao_Paulo';
-  await cloud.savePushPreferences({ userId, enabled: true, timezone, preferred_period: 'auto' });
+  const saved = await cloud.getPushPreferences();
+  await cloud.savePushPreferences({ userId, enabled: true, timezone,
+    preferred_period: saved?.preferred_period || 'auto' });
   return true;
+}
+
+
+export async function removeDevicePush(cloud) {
+  if (!pushSupported()) return;
+  const registration = await navigator.serviceWorker.getRegistration((process.env.PUBLIC_URL || '') + '/');
+  const sub = await registration?.pushManager?.getSubscription();
+  if (!sub) return;
+  try { await cloud.deletePushSubscription(sub.endpoint); }
+  finally { await sub.unsubscribe(); }
 }
 
 export async function disablePush(cloud, userId) {
