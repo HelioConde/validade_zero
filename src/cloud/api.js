@@ -177,8 +177,8 @@ export async function importProducts(products, onProgress) {
       code: p.code, name: p.name, sector: p.sector, needs_review: Boolean(p.review),
       updated_at: new Date().toISOString()
     }));
-    await dbRequest('validadezero_catalogo', 'on_conflict=user_id,code', {
-      method: 'POST', body: group, prefer: 'missing=default,resolution=merge-duplicates,return=minimal'
+    await dbRequest('rpc/validadezero_importar_catalogo', '', {
+      method: 'POST', body: { p_items: group }
     });
     done += group.length;
     if (onProgress) onProgress(done);

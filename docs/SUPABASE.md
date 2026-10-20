@@ -31,3 +31,6 @@ Lotes antigos são migrados explicitamente pelo botão de migração; a operaç�
 - Sem armazenamento de fotografia (somente campo `photo_path`), sem scanner por câmera ou OCR da validade.
 - Sem fila offline. Falhas de rede devem ser resolvidas antes de repetir as ações.
 - Contas do Supabase são geridas pelo mesmo projeto que outros aplicativos, mas nenhuma tabela dos outros aplicativos é consultada.
+
+### Importação segura preservando fotos
+Para não apagar a futura fotografia de um produto durante a atualização de nomes/setores, o site chama a função SQL `public.validadezero_importar_catalogo(p_items jsonb)`, em blocos de até 200. A função usa `SECURITY INVOKER` (mantém RLS), exige `auth.uid()` e atualiza apenas nome, setor e indicador de revisão. `photo_path` não é modificado. Execução é revogada de `anon` e concedida somente a `authenticated`.

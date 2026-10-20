@@ -47,7 +47,7 @@ test('importa catálogo incrementalmente e não sobrescreve caminho da fotografi
       user: { id: '11111111-1111-1111-1111-111111111111' },
       access_token: 'jwt-de-teste', refresh_token: 'refresh-de-teste', expires_in: 3600
     });
-    if (url.includes('/rest/v1/validadezero_catalogo')) return fakeResponse(null);
+    if (url.includes('/rest/v1/rpc/validadezero_importar_catalogo')) return fakeResponse(null);
     throw new Error('Rota inesperada');
   });
   global.fetch = fetchMock;
@@ -56,10 +56,10 @@ test('importa catálogo incrementalmente e não sobrescreve caminho da fotografi
     code: String(index).padStart(13, '0'), name: 'Produto ' + index, sector: '', review: false
   }));
   expect(await importProducts(group)).toBe(201);
-  const posts = fetchMock.mock.calls.filter(([url]) => url.includes('/rest/v1/validadezero_catalogo'));
+  const posts = fetchMock.mock.calls.filter(([url]) => url.includes('/rest/v1/rpc/validadezero_importar_catalogo'));
   expect(posts).toHaveLength(2);
-  expect(JSON.parse(posts[0][1].body)).toHaveLength(200);
-  expect(posts[0][0]).toContain('on_conflict=user_id,code');
-  expect(posts[0][1].headers.Prefer).toContain('resolution=merge-duplicates');
-  expect(JSON.parse(posts[0][1].body)[0]).not.toHaveProperty('photo_path');
+  expect(JSON.parse(posts[0][1].body).p_items).toHaveLength(200);
+  expect(posts[0][0]).toContain('rpc/validadezero_importar_catalogo');
+  expect(posts[0][1].headers.Authorization).toBe('Bearer jwt-de-teste');
+  expect(JSON.parse(posts[0][1].body).p_items[0]).not.toHaveProperty('photo_path');
 });
