@@ -1,7 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import './App.css';
 import {
-  STORAGE_KEY, SECTORS, formatDate, isValidEntry, readEntries,
+  STORAGE_KEY, SECTORS, createBackup, formatDate, isValidEntry, parseBackup, readEntries,
   sortByExpiry, statusLabel, statusOf, summarize, toCsv
 } from './domain/validade';
 
@@ -101,6 +101,7 @@ export default function App() {
   const [editing, setEditing] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [feedback, setFeedback] = useState('');
+  const backupInputRef = useRef(null);
   const counts = useMemo(() => summarize(entries), [entries]);
   const visible = useMemo(() => sortByExpiry(entries).filter(entry => {
     const matchesStatus = filter === 'all' || statusOf(entry.expiration) === filter;
@@ -147,6 +148,36 @@ export default function App() {
     URL.revokeObjectURL(url);
     setFeedback('Relatório CSV exportado. Guarde uma cópia dos seus registros.');
   }
+
+  function downloadBackup() {
+    const blob = new Blob([createBackup(entries)], { type: 'application/json;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'validade-zero-backup.json';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+    setFeedback('Backup JSON gerado. Guarde o arquivo em local seguro.');
+  }
+  async function restoreBackup(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    try {
+      if (file.size > 2 * 1024 * 1024) throw new Error('O arquivo excede o limite de 2 MB.');
+      const imported = parseBackup(await file.text());
+      if (!window.confirm('Restaurar ' + imported.length + ' lote(s)? Os registros atuais neste navegador serão substituídos.')) return;
+      persist(imported, 'Backup restaurado com sucesso: ' + imported.length + ' lote(s).');
+      setSearch('');
+      setSector('all');
+      setFilter('all');
+    } catch (error) {
+      setFeedback('Falha ao restaurar backup: ' + (error instanceof Error ? error.message : 'arquivo inválido.'));
+    } finally {
+      event.target.value = '';
+    }
+  }
   function chooseFilter(next) {
     setFilter(next);
     setShowForm(false);
@@ -190,7 +221,13 @@ export default function App() {
 
           <section className="list-panel" aria-labelledby="list-title">
             <div className="section-heading"><div><p className="eyebrow">INVENTÁRIO / FEFO</p><h2 id="list-title">Lotes e vencimentos <span className="count-bubble">{visible.length}</span></h2><p className="section-subtitle">Ordenados automaticamente pela data de validade.</p></div>
-              <div className="list-actions no-print"><button type="button" className="btn btn--outline" onClick={exportCsv} disabled={!entries.length}>↓ Exportar CSV</button><button type="button" className="btn btn--outline" onClick={() => window.print()} disabled={!entries.length}>⎙ Imprimir</button></div>
+              <div className="list-actions no-print">
+                <button type="button" className="btn btn--outline" onClick={downloadBackup} disabled={!entries.length}>↓ Backup JSON</button>
+                <button type="button" className="btn btn--outline" onClick={() => backupInputRef.current?.click()}>↑ Restaurar</button>
+                <input className="sr-only" type="file" accept=".json,application/json" ref={backupInputRef} onChange={restoreBackup} aria-label="Selecionar backup JSON" tabIndex={-1} />
+                <button type="button" className="btn btn--outline" onClick={exportCsv} disabled={!entries.length}>↓ CSV</button>
+                <button type="button" className="btn btn--outline" onClick={() => window.print()} disabled={!entries.length}>⎙ Imprimir</button>
+              </div>
             </div>
             <div className="filters no-print">
               <label className="search-field"><span aria-hidden="true">⌕</span><span className="sr-only">Buscar produto, código, lote ou setor</span><input type="search" value={search} onChange={event => setSearch(event.target.value)} placeholder="Buscar produto, código ou lote..." /></label>

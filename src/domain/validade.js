@@ -58,11 +58,11 @@ export function sortByExpiry(entries) {
 
 export function isValidEntry(entry) {
   return Boolean(
-    entry && typeof entry.id === 'string' &&
-    typeof entry.name === 'string' && entry.name.trim() &&
-    typeof entry.sector === 'string' && entry.sector.trim() &&
-    typeof entry.batch === 'string' && entry.batch.trim() &&
-    typeof entry.code === 'string' &&
+    entry && typeof entry.id === 'string' && entry.id.length > 0 && entry.id.length <= 128 &&
+    typeof entry.name === 'string' && entry.name.trim() && entry.name.length <= 120 &&
+    typeof entry.sector === 'string' && SECTORS.includes(entry.sector) &&
+    typeof entry.batch === 'string' && entry.batch.trim() && entry.batch.length <= 70 &&
+    typeof entry.code === 'string' && entry.code.length <= 60 &&
     Number.isSafeInteger(entry.quantity) && entry.quantity > 0 &&
     parseDateOnly(entry.expiration)
   );
@@ -96,4 +96,31 @@ export function toCsv(entries) {
 export function formatDate(date) {
   const parsed = parseDateOnly(date);
   return parsed ? new Intl.DateTimeFormat('pt-BR').format(parsed) : '—';
+}
+
+export function createBackup(entries, now = new Date()) {
+  return JSON.stringify({
+    app: 'validade-zero',
+    schemaVersion: 1,
+    exportedAt: now.toISOString(),
+    entries
+  }, null, 2);
+}
+
+export function parseBackup(text) {
+  let data;
+  try {
+    data = JSON.parse(text);
+  } catch {
+    throw new Error('JSON inválido.');
+  }
+  if (!data || data.app !== 'validade-zero' || data.schemaVersion !== 1 || !Array.isArray(data.entries)) {
+    throw new Error('Formato ou versão do backup não reconhecidos.');
+  }
+  if (data.entries.length > 10000) throw new Error('Limite de 10.000 lotes excedido.');
+  if (!data.entries.every(isValidEntry)) throw new Error('O backup contém lotes inválidos.');
+  if (new Set(data.entries.map(entry => entry.id)).size !== data.entries.length) {
+    throw new Error('O backup contém IDs de lotes duplicados.');
+  }
+  return data.entries;
 }

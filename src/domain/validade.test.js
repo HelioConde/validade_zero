@@ -1,4 +1,4 @@
-import { daysUntil, formatDate, isValidEntry, parseDateOnly, sortByExpiry, statusOf, summarize, toCsv } from './validade';
+import { createBackup, daysUntil, formatDate, isValidEntry, parseBackup, parseDateOnly, sortByExpiry, statusOf, summarize, toCsv } from './validade';
 
 const now = new Date(2026, 9, 20);
 
@@ -38,4 +38,15 @@ test('escapes CSV values to reduce spreadsheet formula injection', () => {
   expect(content).toContain("\"'=2+3\"");
   expect(content).toContain('Produto');
   expect(formatDate('2026-10-20')).toBe('20/10/2026');
+});
+
+test('exports and restores a backup using a versioned JSON format', () => {
+  const entries = [{ id: 'x', name: 'Leite', code: '', batch: 'L-01', sector: 'Mercearia', quantity: 5, expiration: '2026-10-25' }];
+  const exported = createBackup(entries, new Date('2026-10-20T10:00:00Z'));
+  expect(JSON.parse(exported).schemaVersion).toBe(1);
+  expect(parseBackup(exported)).toEqual(entries);
+  expect(() => parseBackup('{}')).toThrow(/Formato/);
+  expect(() => parseBackup('{oops')).toThrow(/JSON/);
+  expect(() => parseBackup(createBackup([{ ...entries[0], quantity: 0 }]))).toThrow(/inválidos/);
+  expect(() => parseBackup(createBackup([entries[0], entries[0]]))).toThrow(/duplicados/);
 });
