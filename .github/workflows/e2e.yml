@@ -1,0 +1,40 @@
+name: Playwright - UX e regressão
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  browser-tests:
+    name: Navegação desktop e mobile
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - name: Instalar dependências do projeto
+        run: npm ci
+      - name: Instalar Playwright CLI e runner versionados
+        run: npm install --no-save --package-lock=false @playwright/test@1.56.1
+      - name: Instalar navegador Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Executar testes Playwright
+        run: npx playwright test
+      - name: Salvar capturas, traces e relatório HTML
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-ux-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 14
