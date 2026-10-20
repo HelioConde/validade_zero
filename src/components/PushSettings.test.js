@@ -24,13 +24,13 @@ beforeEach(()=>{
 });
 test('não pede permissão push antes do clique',async()=>{
  render(<PushSettings cloud={cloud} user={user}/>);
- await screen.findByText(/7h/);
+ await screen.findByText('7h',{selector:'strong'});
  expect(client.enablePush).not.toHaveBeenCalled();
  expect(screen.getByRole('button',{name:'Ativar notificações push'})).toBeEnabled();
 });
 test('ativa push pelo clique e permite turno alternativo',async()=>{
  render(<PushSettings cloud={cloud} user={user}/>);
- await screen.findByText(/7h/);
+ await screen.findByText('7h',{selector:'strong'});
  fireEvent.click(screen.getByRole('button',{name:'Ativar notificações push'}));
  await waitFor(()=>expect(client.enablePush).toHaveBeenCalledWith(cloud,user.id));
  fireEvent.change(screen.getByLabelText('Preferência do horário de notificações'),{target:{value:'afternoon'}});
