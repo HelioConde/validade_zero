@@ -23,6 +23,11 @@ jest.mock('./cloud/api', () => ({
 beforeEach(() => {
   window.localStorage.clear();
   jest.clearAllMocks();
+  signIn.mockResolvedValue({ id: 'user-123' });
+  cloudApi.listLots.mockResolvedValue([]);
+  cloudApi.countCatalog.mockResolvedValue(0);
+  cloudApi.migrateLocalCatalog.mockImplementation(async list => list.length);
+  cloudApi.migrateLocalLots.mockImplementation(async list => list.length);
   jest.spyOn(window, 'confirm').mockReturnValue(true);
 });
 afterEach(() => jest.restoreAllMocks());
