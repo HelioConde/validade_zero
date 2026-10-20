@@ -164,3 +164,10 @@ O leitor tenta selecionar a câmera traseira com resolução ideal Full HD. Apó
 A imagem tem moldura para centralizar o EAN. Se o aparelho oferecer ajuste de foco, aparece o botão **Reajustar foco**; se oferecer zoom óptico/digital por API, aparece controle **Zoom**; se suportar lanterna, **Ligar luz**. Os controles não suportados ficam ocultos, e qualquer falha de ajuste não interrompe a leitura. O mesmo scanner é usado na Identificação rápida e no cadastro de lote. A câmera é liberada após reconhecimento ou fechamento.
 
 Testes unitários de capacidades e limites de zoom; Playwright com APIs de câmera simuladas. Verificar o foco físico num smartphone Android/iPhone real antes de concluir a validação do dispositivo.
+
+
+## Push inteligente de vencimentos (Supabase)
+
+Clientes com login podem optar por notificações Web Push. A preferência automática considera os últimos 30 dias de cadastros (peso diário limitado): se o usuário costuma cadastrar de manhã, o resumo é enviado às 07h, mesmo que tenha registrado pontualmente um produto vencido à tarde. Para quem atua mais à tarde, o aviso vai às 13h. Também existe escolha manual de turno. Alertas são deduplicados por vencimento e dispositivo.
+
+O backend (tabelas privadas e Edge Function validadezero-push) foi implantado. A entrega automática só ficará operacional após o administrador cadastrar os segredos Web Push e ligar o cron conforme docs/PUSH.md. O modo local não envia push remoto.

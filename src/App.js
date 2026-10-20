@@ -3,6 +3,7 @@ import './App.css';
 import Icon from './components/Icon';
 import BarcodeCamera from './scanning/BarcodeCamera';
 import ProductPhoto from './components/ProductPhoto';
+import PushSettings from './components/PushSettings';
 import { loadLocalProductPhoto, localProductPhotoPath, localPhotoApi } from './domain/localProductPhotos';
 import { findCentralProduct, canSearchCentralCatalog } from './cloud/centralCatalog';
 import ExpiryCamera from './scanning/ExpiryCamera';
@@ -554,6 +555,7 @@ function InventoryApp({ cloud = null, user = null, onSignOut = null, onActivateC
           </div>
         </header>
         <main id="conteudo" className="main" tabIndex={-1}>
+          {cloud && user?.id && <PushSettings cloud={cloud} user={user}/>}
           {!cloud && onActivateCloud && <section className="demo-banner no-print" aria-label="Modo de demonstração local">
             <div className="demo-banner__copy">
               <span className="demo-banner__eyebrow"><Icon name="check" size={15}/> ACESSO LIVRE, SEM CADASTRO</span>

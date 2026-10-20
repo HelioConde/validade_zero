@@ -313,8 +313,46 @@ export async function adoptCentralProduct(item) {
   return saved;
 }
 
+
+// Push: apenas a conta autenticada pode ler preferências e associar dispositivos.
+export async function getPushPreferences() {
+  const { data } = await dbRequest('validadezero_push_preferences',
+    'select=enabled,timezone,preferred_period&limit=1');
+  return data[0] || null;
+}
+export async function getPushActivity() {
+  const { data } = await dbRequest('validadezero_push_activity',
+    'select=activity_date,period,registrations&order=activity_date.desc&limit=90');
+  return data;
+}
+export async function savePushPreferences({ userId, enabled, timezone, preferred_period }) {
+  if (!userId) throw new Error('Usuário inválido.');
+  const data = { user_id: userId, enabled: Boolean(enabled) };
+  if (timezone) data.timezone = timezone;
+  if (preferred_period) data.preferred_period = preferred_period;
+  await dbRequest('validadezero_push_preferences', 'on_conflict=user_id', {
+    method: 'POST', body: data, prefer: 'resolution=merge-duplicates,return=minimal'
+  });
+}
+export async function upsertPushSubscription(userId, subscription) {
+  const endpoint = subscription?.endpoint;
+  const keys = subscription?.keys;
+  if (!userId || !endpoint || !keys?.p256dh || !keys?.auth) throw new Error('Assinatura push incompleta.');
+  await dbRequest('validadezero_push_subscriptions', 'on_conflict=endpoint', {
+    method: 'POST', body: { user_id: userId, endpoint, keys },
+    prefer: 'resolution=merge-duplicates,return=minimal'
+  });
+}
+export async function deletePushSubscription(endpoint) {
+  if (!endpoint) return;
+  await dbRequest('validadezero_push_subscriptions', 'endpoint=eq.' + encodeURIComponent(endpoint), {
+    method: 'DELETE', prefer: 'return=minimal'
+  });
+}
+
 export const cloudApi = {
   listLots, upsertLot, deleteLot, countCatalog, findProduct, importProducts,
   migrateLocalCatalog, migrateLocalLots,
-  downloadProductPhoto, uploadProductPhoto, adoptCentralProduct
+  downloadProductPhoto, uploadProductPhoto, adoptCentralProduct,
+  getPushPreferences, getPushActivity, savePushPreferences, upsertPushSubscription, deletePushSubscription
 };

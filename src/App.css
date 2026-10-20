@@ -363,3 +363,18 @@ tbody tr:hover { background: #f8f8f9; }
 .scanner-zoom input[type="range"] { width: min(175px, 32vw); accent-color: #242428; min-height: 35px; }
 .scanner-zoom strong { min-width: 32px; text-align: right; font-variant-numeric: tabular-nums; }
 @media (max-width: 600px) { .barcode-viewfinder > .scanner-video { min-height: 230px; } .scanner-controls { display: grid; grid-template-columns: 1fr; } .scanner-zoom { justify-content: space-between; } .scanner-zoom input[type="range"] { flex: 1; max-width: 250px; } }
+
+/* Alertas de vencimento — configuráveis, sem interromper a operação principal. */
+.push-settings { padding:18px 20px; border:1px solid var(--border); border-radius:14px; background:var(--surface-subtle); margin-bottom:24px; }
+.push-settings__heading { display:flex; align-items:flex-start; gap:11px; }
+.push-settings__heading > svg { flex:none; margin-top:1px; }
+.push-settings__heading strong { color:var(--ink-strong); font-size:15px; }
+.push-settings__heading p { color:var(--ink-secondary); margin:5px 0 13px; font-size:12px; line-height:1.5; }
+.push-settings__controls { display:flex; flex-wrap:wrap; align-items:end; gap:13px; }
+.push-settings__controls > span { font-size:13px; padding-bottom:10px; }
+.push-settings__controls label { font-size:12px; color:var(--ink-secondary); display:grid; gap:5px; flex:1 1 230px; }
+.push-settings__controls select { min-height:43px; width:100%; border:1px solid var(--border); border-radius:9px; background:#fff; padding:8px; color:var(--ink-strong); }
+.push-settings__controls .btn { min-height:43px; }
+.push-settings small { display:block; color:var(--ink-muted); margin-top:12px; font-size:11px; line-height:1.5; }
+.push-settings__message { font-size:12px; margin:9px 0 0; font-weight:650; color:var(--ink-secondary); }
+@media(max-width:650px) { .push-settings {padding:14px;} .push-settings__controls {display:grid; grid-template-columns:1fr; align-items:stretch;} .push-settings__controls .btn{width:100%;} }
