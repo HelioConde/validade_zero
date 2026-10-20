@@ -289,7 +289,7 @@ test('busca EAN no catálogo central do servidor sem login nem importação CSV'
   await expect(page.getByRole('region', {name:'Modo de demonstração local'})).toBeVisible();
   await page.getByLabel('Código EAN / código interno').fill('7898276970072');
   await page.getByRole('button',{name:'Buscar produto'}).click();
-  await expect(page.getByRole('region',{name:'Produto encontrado'}).getByText('ESPUMANTE CASA VALDUGA 750ML 130 ANOS')).toBeVisible();
+  await expect(page.getByLabel('Produto encontrado').getByText('ESPUMANTE CASA VALDUGA 750ML 130 ANOS')).toBeVisible();
   await expect(page.getByText('Fonte: catálogo central do servidor')).toBeVisible();
   expect(requests).toHaveLength(1);
   await page.getByRole('button',{name:'Cadastrar lote deste produto'}).click();
