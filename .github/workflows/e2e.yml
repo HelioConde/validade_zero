@@ -28,6 +28,7 @@ jobs:
         env:
           CI: 'true'
           PUBLIC_URL: '/'
+          REACT_APP_CLOUD_MODE: 'off'
       - name: Instalar Playwright CLI e runner versionados
         run: npm install --no-save --package-lock=false @playwright/test@1.56.1
       - name: Instalar navegador Chromium
