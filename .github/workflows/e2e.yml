@@ -23,15 +23,15 @@ jobs:
           cache: npm
       - name: Instalar dependências do projeto
         run: npm ci
-      - name: Instalar Playwright CLI e runner versionados
-        run: npm install --no-save --package-lock=false @playwright/test@1.56.1
-      - name: Instalar navegador Chromium
-        run: npx playwright install --with-deps chromium
       - name: Compilar aplicação para teste E2E
         run: npm run build
         env:
           CI: 'true'
           PUBLIC_URL: '/'
+      - name: Instalar Playwright CLI e runner versionados
+        run: npm install --no-save --package-lock=false @playwright/test@1.56.1
+      - name: Instalar navegador Chromium
+        run: npx playwright install --with-deps chromium
       - name: Executar testes Playwright
         run: npx playwright test
         env:
