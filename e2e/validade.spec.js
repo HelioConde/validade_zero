@@ -196,3 +196,82 @@ test('permite retorno à digitação caso a câmera não esteja disponível', as
   await page.getByRole('button', { name: 'Voltar para digitação' }).click();
   await expect(page.getByLabel('Código EAN / código interno')).toBeEnabled();
 });
+
+
+test('visitante testa localmente e pode voltar do login sem perder lotes', async ({ page }) => {
+  await expect(page.getByRole('region', { name: 'Modo de demonstração local' })).toBeVisible();
+  await page.getByRole('button', { name: /Cadastrar primeiro lote/ }).click();
+  await page.getByLabel('Nome do produto *').fill('BISCOITO TESTE');
+  await page.getByLabel('Lote *').fill('TESTE-001');
+  await page.getByLabel('Data de validade *').fill('2030-12-31');
+  await page.getByRole('button', { name: 'Cadastrar lote', exact: true }).click();
+  await expect(page.getByRole('region', { name: 'Tabela de lotes' }).getByText('BISCOITO TESTE')).toBeVisible();
+  await page.getByRole('button', { name: 'Salvar na nuvem' }).click();
+  await expect(page.getByRole('heading', { name: 'Entrar no Validade Zero' })).toBeVisible();
+  await page.getByRole('button', { name: /Continuar sem login/ }).click();
+  await expect(page.getByRole('region', { name: 'Tabela de lotes' }).getByText('BISCOITO TESTE')).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole('region', { name: 'Tabela de lotes' }).getByText('BISCOITO TESTE')).toBeVisible();
+});
+
+test('versão de teste local é utilizável sem qualquer chamada à API Supabase', async ({ page }) => {
+  const hits = [];
+  await page.route('**/*.supabase.co/**', route => {
+    hits.push(route.request().url());
+    route.abort();
+  });
+  await page.reload();
+  await expect(page.getByRole('region', { name: 'Modo de demonstração local' })).toBeVisible();
+  await page.getByRole('button', { name: /Cadastrar primeiro lote/ }).click();
+  await page.getByLabel('Nome do produto *').fill('LEITE LOCAL');
+  await page.getByLabel('Lote *').fill('L-123');
+  await page.getByLabel('Data de validade *').fill('2030-11-10');
+  await page.getByRole('button', { name: 'Cadastrar lote', exact: true }).click();
+  await expect(page.getByRole('region', { name: 'Tabela de lotes' }).getByText('LEITE LOCAL')).toBeVisible();
+  expect(hits).toHaveLength(0);
+});
+
+test('migração para conta autenticada preserva dados locais sem sobrescrever nuvem', async ({ page }) => {
+  const requests = [];
+  await page.route('**/*.supabase.co/**', async route => {
+    const request = route.request(), url = request.url(), method = request.method();
+    requests.push({ url, method, body: request.postData() || '' });
+    if (url.includes('/auth/v1/token')) return route.fulfill({
+      status: 200, contentType: 'application/json',
+      body: JSON.stringify({ user:{id:'conta-test'}, access_token:'jwt-e2e',
+        refresh_token:'refresh-e2e', expires_in:3600 })
+    });
+    if (url.includes('/rest/v1/validadezero_catalogo') && method==='GET') {
+      return route.fulfill({ status:200, contentType:'application/json',
+        headers:{'content-range':'0-0/0'}, body:'[]' });
+    }
+    if (url.includes('/rest/v1/validadezero_lotes') && method==='GET') {
+      return route.fulfill({ status:200, contentType:'application/json', body:'[]' });
+    }
+    return route.fulfill({ status: 201, contentType:'application/json', body:'{}' });
+  });
+  await page.getByRole('button', { name: /Cadastrar primeiro lote/ }).click();
+  await page.getByLabel('Nome do produto *').fill('MIGRAR SUCO');
+  await page.getByLabel('Lote *').fill('S-001');
+  await page.getByLabel('Data de validade *').fill('2030-12-31');
+  await page.getByRole('button', { name: 'Cadastrar lote', exact: true }).click();
+  await page.getByLabel('Arquivo CSV do catálogo').setInputFiles({
+    name:'catalogo.csv', mimeType:'text/csv',
+    buffer:Buffer.from('codigo;nome;setor_sugerido\n000444;MIGRAR SUCO;Bebidas\n')
+  });
+  await expect(page.getByText(/Catálogo importado: 1 produtos/)).toBeVisible();
+  await page.getByRole('button', { name: 'Salvar na nuvem' }).click();
+  await page.getByLabel('E-mail').fill('teste@example.com');
+  await page.getByLabel('Senha').fill('senha-segura');
+  await page.getByRole('button', { name: 'Entrar', exact:true }).click();
+  await expect(page.getByRole('button', { name:'Migrar dados locais para a nuvem' })).toBeVisible();
+  page.once('dialog', dialog => dialog.accept());
+  await page.getByRole('button', { name:'Migrar dados locais para a nuvem' }).click();
+  await expect(page.getByText(/Migração concluída/)).toBeVisible();
+  const uploads = requests.filter(x => x.method==='POST' && x.url.includes('/rest/v1/'));
+  expect(uploads).toHaveLength(2);
+  expect(uploads.every(x => x.url.includes('on_conflict=user_id'))).toBe(true);
+  const photoPreserved = uploads.find(x => x.url.includes('validadezero_catalogo'));
+  expect(photoPreserved.body).not.toContain('photo_path');
+  expect(await page.evaluate(() => localStorage.getItem('validade-zero:catalogo:v1') !== null)).toBeTruthy();
+});

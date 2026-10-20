@@ -302,3 +302,24 @@ tbody tr:hover { background: #f8f8f9; }
   .product-photo__actions { display: grid; grid-template-columns: 1fr; }
   .product-photo__actions .btn { white-space: normal; width: 100%; }
 }
+
+/* Teste local primeiro: experiência completa sem barreira de cadastro. */
+.demo-banner { margin: 0 0 25px; padding: 24px 26px; display: flex; align-items: center; justify-content: space-between; gap: 24px; background: #151517; color: #fff; border-radius: var(--radius-lg); box-shadow: var(--shadow-card); }
+.demo-banner__copy { min-width: 0; max-width: 680px; }
+.demo-banner__eyebrow { display: inline-flex; align-items: center; gap: 6px; color: #d9d9dc; font-weight: 780; letter-spacing: 1.1px; font-size: 10px; }
+.demo-banner h2 { margin: 9px 0 8px; color: #fff; font-size: clamp(17px, 2.2vw, 22px); letter-spacing: -.6px; line-height: 1.25; }
+.demo-banner p { font-size: 12px; line-height: 1.6; color: #ededf0; margin: 0; }
+.demo-banner .demo-banner__disclaimer { display: flex; align-items: flex-start; gap: 7px; margin-top: 12px; color: #c2c2c9; font-size: 11px; }
+.demo-banner__disclaimer svg { flex-shrink: 0; margin-top: 1px; }
+.demo-banner__actions { width: 195px; flex: 0 0 195px; display: grid; gap: 8px; }
+.demo-banner__actions .btn { justify-content: center; min-height: 45px; white-space: normal; }
+.demo-banner__actions span { color: #bdbdc4; font-size: 11px; line-height: 1.45; text-align: center; }
+.btn--light { background: #fff; color: #151517; border: 1px solid #fff; font-weight: 770; }
+.btn--light:hover { background: #ececef; color: #111; }
+.auth-local { width: 100%; margin: 0 0 14px; min-height: 45px; justify-content: center; }
+.legacy-transfer strong { color: var(--ink-strong); }
+@media (max-width: 760px) {
+  .demo-banner { padding: 20px 17px; display: grid; gap: 17px; }
+  .demo-banner__actions { width: 100%; max-width: none; }
+  .demo-banner__actions span { text-align: left; }
+}

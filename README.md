@@ -118,3 +118,14 @@ Documentação de compatibilidade, privacidade e limites: [docs/SCANNERS.md](doc
 ## Fotos de produtos (Supabase Storage)
 
 Após pesquisar um EAN com login, o site oferece tirar foto caso ainda não exista imagem desse produto. A foto é comprimida e armazenada no bucket privado validadezero-produtos, e será reutilizada nas próximas consultas. Caso já exista uma imagem, a ação é Trocar foto. As imagens do OCR de validade continuam locais e não são enviadas. Consulte docs/FOTOGRAFIAS.md para detalhes.
+
+
+## Experimente sem login — versão local no GitHub Pages
+
+O Validade Zero abre **direto no modo de teste local** para visitantes sem sessão ativa. Não precisa criar conta, conectar ao Supabase ou fornecer e-mail. É possível cadastrar, editar e filtrar lotes, importar CSV de EAN, escanear código de barras e usar OCR de validade no próprio navegador. Os dados ficam no localStorage somente daquele navegador, **não** são sincronizados; fotos persistentes do produto continuam exclusivas do modo nuvem. A captura de câmera/OCR pode exigir HTTPS, permissão e download das bibliotecas.
+
+Na faixa **Teste o Validade Zero antes de criar uma conta**, o botão **Salvar na nuvem** abre o login/cadastro sem excluir nada do modo local. O formulário de login tem **Continuar sem login** para voltar imediatamente ao teste. Após entrar, a opção **Migrar dados locais para a nuvem** copia tanto os lotes quanto o catálogo; registros remotos existentes de mesmo ID/EAN **não são sobrescritos**, e o conteúdo local é preservado. Se a cópia falhar no meio, a operação é repetível com segurança. O uso da nuvem continua opcional.
+
+Visitantes devem baixar o backup JSON regularmente: limpeza dos dados do navegador, troca de aparelho, navegação privada ou redefinição do perfil podem apagar a cópia local. Usuários com sessão Supabase válida continuam entrando automaticamente na nuvem ao revisitar.
+
+Esta é a experiência de aquisição "teste antes do cadastro". Sem rastreamento comportamental ou telemetria invasiva.

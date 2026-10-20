@@ -4,7 +4,7 @@ import Icon from './components/Icon';
 import BarcodeCamera from './scanning/BarcodeCamera';
 import ProductPhoto from './components/ProductPhoto';
 import ExpiryCamera from './scanning/ExpiryCamera';
-import { CLOUD_ENABLED, cloudApi, restoreSession, signIn, signOut, signUp } from './cloud/api';
+import { CLOUD_ENABLED, cloudApi, hasStoredCloudSession, restoreSession, signIn, signOut, signUp } from './cloud/api';
 import { MAX_CATALOG_CSV_BYTES, findProductByCode, loadCatalog, parseProductCatalogCsv, saveCatalog } from './domain/catalogo';
 import {
   STORAGE_KEY, SECTORS, createBackup, formatDate, isValidEntry, parseBackup,
@@ -149,12 +149,13 @@ function Metric({ name, value, detail, icon, kind, onClick }) {
   </button>;
 }
 
-function InventoryApp({ cloud = null, user = null, onSignOut = null }) {
+function InventoryApp({ cloud = null, user = null, onSignOut = null, onActivateCloud = null }) {
   const [entries, setEntries] = useState(() => cloud ? [] : readEntries(window.localStorage));
   const [cloudCount, setCloudCount] = useState(0);
   const [cloudBusy, setCloudBusy] = useState(Boolean(cloud));
   const [localMigrated, setLocalMigrated] = useState(false);
   const localLots = cloud && !localMigrated ? readEntries(window.localStorage) : [];
+  const localProducts = cloud && !localMigrated ? loadCatalog(window.localStorage) : [];
   const [catalog, setCatalog] = useState(() => cloud ? [] : loadCatalog(window.localStorage));
   const [catalogCode, setCatalogCode] = useState('');
   const [scannerOpen, setScannerOpen] = useState(false);
@@ -321,17 +322,32 @@ function InventoryApp({ cloud = null, user = null, onSignOut = null }) {
     }
   }
 
-  async function migrateExistingLots() {
-    if (!cloud || !localLots.length) return;
-    if (!window.confirm('Enviar ' + localLots.length + ' lote(s) deste navegador para sua conta Supabase? A migração não exclui o backup local nem sobrescreve IDs já existentes.')) return;
+  async function migrateLocalData() {
+    if (!cloud || (!localLots.length && !localProducts.length)) return;
+    const confirmed = window.confirm(
+      'Copiar para sua conta ' + localLots.length.toLocaleString('pt-BR') + ' lote(s) e ' +
+      localProducts.length.toLocaleString('pt-BR') + ' produto(s) locais? ' +
+      'Os dados deste navegador serão preservados; registros já existentes com o mesmo identificador na nuvem não serão sobrescritos.'
+    );
+    if (!confirmed) return;
     setCloudBusy(true);
     try {
-      await cloud.migrateLocalLots(localLots);
-      setEntries(await cloud.listLots());
+      if (localProducts.length) {
+        await cloud.migrateLocalCatalog(localProducts, count => {
+          setFeedback('Enviando catálogo: ' + count.toLocaleString('pt-BR') + '/' +
+            localProducts.length.toLocaleString('pt-BR') + ' produto(s) processados.');
+        });
+      }
+      if (localLots.length) await cloud.migrateLocalLots(localLots);
+      const [updatedLots, updatedCatalogCount] = await Promise.all([cloud.listLots(), cloud.countCatalog()]);
+      setEntries(updatedLots);
+      setCloudCount(updatedCatalogCount);
       setLocalMigrated(true);
-      setFeedback('Migração concluída. Os dados originais continuam salvos neste navegador.');
-    } catch (error) { setFeedback('Migração não concluída: ' + error.message + '. Alguns lotes podem ter sido importados. Repita com segurança.'); }
-    finally { setCloudBusy(false); }
+      setFeedback('Migração concluída. Lotes e produtos do teste estão na sua conta; o conteúdo local foi mantido como cópia.');
+    } catch (error) {
+      setFeedback('Migração interrompida: ' + error.message +
+        '. Parte dos dados pode ter sido enviada. É seguro tentar novamente: registros existentes não são sobrescritos.');
+    } finally { setCloudBusy(false); }
   }
 
   function download(name, content, type) {
@@ -417,11 +433,24 @@ function InventoryApp({ cloud = null, user = null, onSignOut = null }) {
         <header className="topbar no-print">
           <div className="breadcrumbs"><span>Operação</span><Icon name="chevron" size={15}/><strong>Controle de validade</strong></div>
           <div className="topbar__right">
-            <span className="topbar__pill"><span className="online-dot"/> {cloud ? 'Supabase conectado' : 'Armazenamento local'}</span>
+            <span className="topbar__pill"><span className="online-dot"/> {cloud ? 'Nuvem / Supabase' : 'Teste local / sem login'}</span>
+            {!cloud && onActivateCloud && <button type="button" className="btn btn--outline" onClick={onActivateCloud}>Entrar na nuvem</button>}
             {cloud && <button type="button" className="btn btn--outline" onClick={onSignOut} aria-label="Sair da conta">Sair</button>}
           </div>
         </header>
         <main id="conteudo" className="main" tabIndex={-1}>
+          {!cloud && onActivateCloud && <section className="demo-banner no-print" aria-label="Modo de demonstração local">
+            <div className="demo-banner__copy">
+              <span className="demo-banner__eyebrow"><Icon name="check" size={15}/> ACESSO LIVRE, SEM CADASTRO</span>
+              <h2>Teste o Validade Zero antes de criar uma conta.</h2>
+              <p>Cadastre lotes, importe um catálogo CSV, experimente o EAN pela câmera e leia a validade por OCR. Tudo começa aqui, sem login.</p>
+              <p className="demo-banner__disclaimer"><Icon name="info" size={15}/> Os dados ficam apenas neste navegador. Se limpar os dados do navegador, você pode perdê-los. Faça backup. Fotos permanentes e sincronização exigem conta.</p>
+            </div>
+            <div className="demo-banner__actions">
+              <button type="button" className="btn btn--light" onClick={onActivateCloud}><Icon name="shield" size={17}/> Salvar na nuvem</button>
+              <span>Gostou? Crie uma conta e migre seus registros.</span>
+            </div>
+          </section>}
           <header className="heading">
             <div><div className="eyebrow"><span className="eyebrow__line"/> PAINEL DE ESTOQUE</div>
               <h1>Visão geral <span className="heading__accent">.</span></h1>
@@ -447,7 +476,10 @@ function InventoryApp({ cloud = null, user = null, onSignOut = null }) {
             </button>
           </section>
           <p className="privacy-hint"><Icon name="info" size={16}/> {cloud ? 'Dados salvos na nuvem e privados por usuário. Contas diferentes ainda não compartilham o mesmo estoque. O sistema não substitui procedimentos oficiais de segurança alimentar.' : 'Versão de demonstração local: sem sincronização entre funcionários e sem substituição dos procedimentos oficiais de segurança alimentar.'}</p>
-          {cloud && localLots.length > 0 && <div className="legacy-transfer"><span>{localLots.length} lote(s) antigos encontrados neste navegador.</span><button className="btn btn--outline" type="button" disabled={cloudBusy} onClick={migrateExistingLots}>Migrar lotes para a nuvem</button></div>}
+          {cloud && (localLots.length > 0 || localProducts.length > 0) && <section className="legacy-transfer" aria-label="Migrar dados do teste local">
+            <span><strong>Recupere seu teste local:</strong> {localLots.length.toLocaleString('pt-BR')} lote(s) e {localProducts.length.toLocaleString('pt-BR')} produto(s) encontrados neste navegador. Sua cópia local será mantida.</span>
+            <button className="btn btn--outline" type="button" disabled={cloudBusy} onClick={migrateLocalData}>Migrar dados locais para a nuvem</button>
+          </section>}
           {cloudBusy && <p role="status" className="cloud-loading">Sincronizando dados com o Supabase…</p>}
 
           <section className="catalog-panel no-print" aria-labelledby="catalog-title">
@@ -556,20 +588,13 @@ function InventoryApp({ cloud = null, user = null, onSignOut = null }) {
 }
 
 
-function CloudEntry() {
-  const [user, setUser] = useState(undefined);
+function CloudEntry({ onTryLocal, initialUser = null }) {
+  const [user, setUser] = useState(initialUser);
   const [mode, setMode] = useState('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [working, setWorking] = useState(false);
-
-  useEffect(() => {
-    let active = true;
-    restoreSession().then(restored => { if (active) setUser(restored); })
-      .catch(() => { if (active) setUser(null); });
-    return () => { active = false; };
-  }, []);
 
   async function submit(event) {
     event.preventDefault();
@@ -587,16 +612,15 @@ function CloudEntry() {
   async function logout() {
     try { await signOut(); } catch { /* sessão local será apagada mesmo se a rede falhar */ }
     setUser(null); setPassword('');
+    onTryLocal();
   }
-
-  if (user === undefined) return <main className="auth-screen"><p role="status">Verificando sua sessão Supabase…</p></main>;
   if (user) return <InventoryApp key={user.id} cloud={cloudApi} user={user} onSignOut={logout}/>;
   return <main className="auth-screen">
     <section className="auth-card" aria-labelledby="auth-title">
       <span className="auth-mark"><Icon name="shield" size={25}/></span>
       <p className="eyebrow">VALIDADE ZERO / NUVEM SEGURA</p>
       <h1 id="auth-title">{mode === 'signup' ? 'Criar conta' : 'Entrar no Validade Zero'}</h1>
-      <p>Seus produtos e lotes ficam protegidos na sua conta Supabase. O catálogo não é público.</p>
+      <p>Entre para sincronizar seus produtos e lotes. O teste sem login continua disponível e seus dados locais não serão apagados.</p>
       <form className="auth-form" onSubmit={submit}>
         <label htmlFor="cloud-email">E-mail</label>
         <input id="cloud-email" type="email" autoComplete="email" required value={email} onChange={e => setEmail(e.target.value)}/>
@@ -608,11 +632,31 @@ function CloudEntry() {
       <button type="button" className="auth-switch" onClick={() => { setMode(mode === 'signup' ? 'login' : 'signup'); setError(''); }}>
         {mode === 'signup' ? 'Já possui conta? Entrar' : 'Não possui conta? Criar conta'}
       </button>
-      <small>A conta usa o Supabase Auth. O acesso a produtos e lotes é individual nesta versão.</small>
+      <button type="button" className="btn btn--outline auth-local" onClick={onTryLocal}><Icon name="arrow" size={17}/> Continuar sem login</button>
+      <small>A conta usa o Supabase Auth. Cada usuário vê somente seus registros; os dados locais ficam separados até a migração voluntária.</small>
     </section>
   </main>;
 }
 
 export default function App() {
-  return CLOUD_ENABLED ? <CloudEntry/> : <InventoryApp/>;
+  const [screen, setScreen] = useState(() => CLOUD_ENABLED && hasStoredCloudSession() ? 'checking' : 'local');
+  const [restoredUser, setRestoredUser] = useState(null);
+
+  useEffect(() => {
+    if (screen !== 'checking') return undefined;
+    let active = true;
+    restoreSession().then(user => {
+      if (!active) return;
+      setRestoredUser(user);
+      setScreen(user ? 'cloud' : 'local');
+    }).catch(() => { if (active) setScreen('local'); });
+    return () => { active = false; };
+  }, [screen]);
+
+  if (screen === 'checking') return <main className="auth-screen"><p role="status">Verificando sua sessão…</p></main>;
+  if (screen === 'cloud' || screen === 'login') return <CloudEntry key={screen} initialUser={restoredUser}
+    onTryLocal={() => { setRestoredUser(null); setScreen('local'); }}/>;
+  return <InventoryApp key="local" onActivateCloud={CLOUD_ENABLED
+    ? () => { setRestoredUser(null); setScreen('login'); }
+    : null}/>;
 }
