@@ -113,3 +113,8 @@ Depois de entrar e importar o catálogo, use **Escanear EAN** para abrir a câme
 No formulário do lote, **Ler validade pela câmera (OCR)** abre a câmera, permite fotografar ou escolher imagem existente e extrai sugestões de datas usando Tesseract.js. O usuário **sempre confirma a data** antes de cadastrar o lote. Nenhuma foto do OCR é enviada ao Supabase.
 
 Documentação de compatibilidade, privacidade e limites: [docs/SCANNERS.md](docs/SCANNERS.md).
+
+
+## Fotos de produtos (Supabase Storage)
+
+Após pesquisar um EAN com login, o site oferece tirar foto caso ainda não exista imagem desse produto. A foto é comprimida e armazenada no bucket privado validadezero-produtos, e será reutilizada nas próximas consultas. Caso já exista uma imagem, a ação é Trocar foto. As imagens do OCR de validade continuam locais e não são enviadas. Consulte docs/FOTOGRAFIAS.md para detalhes.
