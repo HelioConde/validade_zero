@@ -329,3 +329,16 @@ tbody tr:hover { background: #f8f8f9; }
 .catalog-server-label svg { flex-shrink:0; }
 .catalog-central-photo { display:flex;align-items:center;justify-content:space-between;gap:14px;padding:13px 15px;margin-top:12px;border:1px solid var(--border);border-radius:11px;background:var(--surface-subtle);font-size:12px; }
 @media(max-width:650px){.catalog-central-photo{display:grid;}.catalog-central-photo button{width:100%;white-space:normal;}}
+
+/* Mesmo leitor por câmera nos dois campos de identificação por EAN. */
+.ean-input-wrap { display:flex; position:relative; align-items:center; min-width:0; width:100%; }
+.ean-input-wrap > input { width:100%; min-width:0; padding-right:55px !important; }
+.ean-input-camera { position:absolute; top:50%; right:5px; transform:translateY(-50%);
+  width:43px; height:43px; display:inline-flex; align-items:center; justify-content:center;
+  background:#f3f3f4; color:#19191b; border:1px solid #d6d6dc; border-radius:9px;
+  cursor:pointer; transition:background .15s ease,border-color .15s ease; }
+.ean-input-camera:hover { background:#e7e7e9; border-color:#5d5d66; }
+.ean-input-camera:focus-visible { outline:3px solid #707070; outline-offset:2px; }
+.ean-input-wrap--search { flex:1 1 190px; }
+.ean-input-wrap--search > input { flex:1 1 auto; }
+@media(max-width:600px){.ean-input-camera{width:44px;height:44px;}.ean-input-wrap--search{flex-basis:100%;}}

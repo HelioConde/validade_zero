@@ -34,6 +34,7 @@ test('cadastrar, editar, buscar e filtrar lotes', async ({ page }, testInfo) => 
   await expect(page.locator('#entry-name')).toBeFocused();
 
   await page.getByRole('textbox', { name: /Nome do produto/ }).fill('Leite integral');
+  await page.getByLabel('EAN / código interno *').fill('7898276970072');
   await page.getByRole('textbox', { name: /^Lote/ }).fill('L-2026-01');
   await page.getByLabel('Data de validade *').fill(futureDate(3));
   await page.getByRole('button', { name: 'Cadastrar lote' }).click();
@@ -51,6 +52,7 @@ test('cadastrar, editar, buscar e filtrar lotes', async ({ page }, testInfo) => 
   await page.getByRole('button', { name: 'Editar lote L-2026-01' }).click();
   await expect(page.getByRole('heading', { name: 'Editar lote' })).toBeVisible();
   await page.getByRole('textbox', { name: /Nome do produto/ }).fill('Leite integral atualizado');
+  await page.getByLabel('EAN / código interno *').fill('7898276970072');
   await page.getByRole('button', { name: 'Salvar alterações' }).click();
   await expect(page.getByText('Leite integral atualizado', { exact: true })).toBeVisible();
 
@@ -60,6 +62,7 @@ test('cadastrar, editar, buscar e filtrar lotes', async ({ page }, testInfo) => 
 test('confirmação para mudanças não salvas e exclusão de lote', async ({ page }) => {
   await page.getByRole('button', { name: /Cadastrar primeiro lote/ }).click();
   await page.getByRole('textbox', { name: /Nome do produto/ }).fill('Iogurte');
+  await page.getByLabel('EAN / código interno *').fill('7898276970072');
   page.once('dialog', dialog => dialog.dismiss());
   await page.getByRole('button', { name: 'Fechar formulário' }).click();
   await expect(page.getByRole('heading', { name: 'Cadastrar novo lote' })).toBeVisible();
@@ -69,6 +72,7 @@ test('confirmação para mudanças não salvas e exclusão de lote', async ({ pa
 
   await page.getByRole('button', { name: /Cadastrar primeiro lote/ }).click();
   await page.getByRole('textbox', { name: /Nome do produto/ }).fill('Iogurte');
+  await page.getByLabel('EAN / código interno *').fill('7898276970072');
   await page.getByRole('textbox', { name: /^Lote/ }).fill('I-01');
   await page.getByLabel('Data de validade *').fill('2020-01-01');
   await page.getByRole('button', { name: 'Cadastrar lote' }).click();
@@ -110,7 +114,7 @@ test('importa catálogo local e preenche nome e setor ao buscar EAN', async ({ p
   await expect(page.getByLabel('Produto encontrado').getByText('BISCOITO DE CHOCOLATE')).toBeVisible();
   await page.getByRole('button', { name: 'Cadastrar lote deste produto' }).click();
   await expect(page.getByLabel('Nome do produto *')).toHaveValue('BISCOITO DE CHOCOLATE');
-  await expect(page.getByLabel('Código / EAN')).toHaveValue('07890123456780');
+  await expect(page.getByLabel('EAN / código interno *')).toHaveValue('07890123456780');
   await expect(page.getByLabel('Setor *')).toHaveValue('Mercearia');
   await page.getByLabel('Lote *').fill('B-01');
   await page.getByLabel('Data de validade *').fill('2030-12-31');
@@ -202,6 +206,7 @@ test('visitante testa localmente e pode voltar do login sem perder lotes', async
   await expect(page.getByRole('region', { name: 'Modo de demonstração local' })).toBeVisible();
   await page.getByRole('button', { name: /Cadastrar primeiro lote/ }).click();
   await page.getByLabel('Nome do produto *').fill('BISCOITO TESTE');
+  await page.getByLabel('EAN / código interno *').fill('7898276970072');
   await page.getByLabel('Lote *').fill('TESTE-001');
   await page.getByLabel('Data de validade *').fill('2030-12-31');
   await page.getByRole('button', { name: 'Cadastrar lote', exact: true }).click();
@@ -224,6 +229,7 @@ test('versão de teste local é utilizável sem qualquer chamada à API Supabase
   await expect(page.getByRole('region', { name: 'Modo de demonstração local' })).toBeVisible();
   await page.getByRole('button', { name: /Cadastrar primeiro lote/ }).click();
   await page.getByLabel('Nome do produto *').fill('LEITE LOCAL');
+  await page.getByLabel('EAN / código interno *').fill('7898276970072');
   await page.getByLabel('Lote *').fill('L-123');
   await page.getByLabel('Data de validade *').fill('2030-11-10');
   await page.getByRole('button', { name: 'Cadastrar lote', exact: true }).click();
@@ -252,6 +258,7 @@ test('migração para conta autenticada preserva dados locais sem sobrescrever n
   });
   await page.getByRole('button', { name: /Cadastrar primeiro lote/ }).click();
   await page.getByLabel('Nome do produto *').fill('MIGRAR SUCO');
+  await page.getByLabel('EAN / código interno *').fill('7898276970072');
   await page.getByLabel('Lote *').fill('S-001');
   await page.getByLabel('Data de validade *').fill('2030-12-31');
   await page.getByRole('button', { name: 'Cadastrar lote', exact: true }).click();
@@ -308,8 +315,46 @@ test('falha do catálogo central não impede usar lotes locais', async ({page}) 
   await expect(page.getByText(/Não foi possível consultar o servidor/)).toBeVisible();
   await page.getByRole('button',{name:/Cadastrar primeiro lote/}).click();
   await page.getByLabel('Nome do produto *').fill('PRODUTO MANUAL');
+  await page.getByLabel('EAN / código interno *').fill('7898276970072');
   await page.getByLabel('Lote *').fill('M-001');
   await page.getByLabel('Data de validade *').fill('2030-12-31');
   await page.getByRole('button',{name:'Cadastrar lote',exact:true}).click();
   await expect(page.getByRole('region',{name:'Tabela de lotes'}).getByText('PRODUTO MANUAL')).toBeVisible();
+});
+
+
+test('EAN do lote é obrigatório e o ícone de câmera lê o código no próprio formulário', async ({page}) => {
+  await page.getByRole('button', {name:/Cadastrar primeiro lote/}).click();
+  await page.getByLabel('Nome do produto *').fill('SUCO DE UVA');
+  await page.getByLabel('Lote *').fill('S-001');
+  await page.getByLabel('Data de validade *').fill('2030-12-31');
+  await page.getByRole('button',{name:'Cadastrar lote',exact:true}).click();
+  await expect(page.getByText(/Informe o EAN ou código interno numérico/)).toBeVisible();
+  await expect(page.getByLabel('EAN / código interno *')).toBeFocused();
+  await page.getByLabel('EAN / código interno *').fill('EAN ABC');
+  await page.getByRole('button',{name:'Cadastrar lote',exact:true}).click();
+  await expect(page.getByText(/Informe o EAN ou código interno numérico/)).toBeVisible();
+
+  await page.evaluate(() => {
+    window.BarcodeDetector = class {
+      static async getSupportedFormats() { return ['ean_13']; }
+      async detect() { return [{rawValue:'7898276970072'}]; }
+    };
+    navigator.mediaDevices.getUserMedia = async () => new MediaStream();
+    Object.defineProperty(HTMLMediaElement.prototype, 'readyState', {configurable:true,get:()=>3});
+    HTMLMediaElement.prototype.play = async () => {};
+    HTMLMediaElement.prototype.pause = () => {};
+  });
+  await page.getByRole('button',{name:'Escanear EAN do lote com a câmera'}).click();
+  await expect(page.getByRole('region',{name:'Leitor de EAN'})).toBeVisible();
+  await expect(page.getByLabel('EAN / código interno *')).toHaveValue('7898276970072');
+  await expect(page.getByRole('region',{name:'Leitor de EAN'})).toHaveCount(0);
+  await page.getByRole('button',{name:'Cadastrar lote',exact:true}).click();
+  await expect(page.getByRole('region',{name:'Tabela de lotes'}).getByText('SUCO DE UVA')).toBeVisible();
+});
+
+test('ícone de câmera fica junto do EAN na Identificação rápida', async ({page}) => {
+  await expect(page.getByLabel('Código EAN / código interno').locator('..').getByRole('button',{name:'Escanear EAN com a câmera'})).toBeVisible();
+  await page.getByRole('button',{name:/Cadastrar primeiro lote/}).click();
+  await expect(page.getByLabel('EAN / código interno *').locator('..').getByRole('button',{name:'Escanear EAN do lote com a câmera'})).toBeVisible();
 });

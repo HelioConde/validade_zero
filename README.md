@@ -138,3 +138,10 @@ A base de referência para EAN e códigos internos foi importada ao banco na tab
 Exemplo confirmado na importação: `7898276970072` → `ESPUMANTE CASA VALDUGA 750ML 130 ANOS` (`Bebidas`). Dados importados do catálogo do projeto, não de uma fonte oficial de validação GS1; conferir nomes, códigos e setores nas operações reais.
 
 Para registrar foto quando um produto foi encontrado no catálogo central, usuários autenticados podem **Adicionar ao meu catálogo e habilitar foto**. Veja [docs/CATALOGO_CENTRAL.md](docs/CATALOGO_CENTRAL.md). A versão local continua sem login e os lotes continuam salvos só no navegador.
+
+
+## EAN obrigatório e câmera nos dois campos
+
+Para **criar ou editar** um lote, informe um **EAN/código interno numérico de 1 a 14 dígitos**. O campo é obrigatório e não permite salvar vazio nem com letras. O ícone de câmera fica dentro do campo e abre o mesmo scanner EAN usado na identificação rápida. Na identificação rápida, o ícone também aparece ao lado do código, sem precisar de botão separado. A captura preenche o campo; a data de validade continua sendo confirmada separadamente via OCR ou digitação.
+
+Por compatibilidade, lotes antigos que já existam sem código continuam legíveis no histórico e nos backups, mas ao editá-los será necessário preencher o EAN/código interno antes de salvar. Códigos internos numéricos curtos do catálogo continuam aceitos e zeros à esquerda são preservados.
