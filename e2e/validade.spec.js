@@ -416,3 +416,67 @@ test('OCR da validade abre a partir do ícone dentro do input e só preenche ap�
   await expect(page.getByLabel('Data de validade *')).toHaveValue('2027-11-30');
   await expect(page.getByRole('region',{name:'Reconhecimento da validade'})).toHaveCount(0);
 });
+
+
+test('scanner EAN solicita foco contínuo e oferece zoom e lanterna quando disponíveis', async ({ page }) => {
+  await page.evaluate(() => {
+    window.__cameraConstraints = [];
+    window.__cameraStopped = false;
+    window.BarcodeDetector = class {
+      static async getSupportedFormats() { return ['ean_13']; }
+      async detect() { return []; }
+    };
+    const track = {
+      getCapabilities() { return { focusMode: ['auto', 'continuous'], zoom: { min: 1, max: 4 }, torch: true }; },
+      getSettings() { return { zoom: 1 }; },
+      applyConstraints(settings) { window.__cameraConstraints.push(settings); return Promise.resolve(); },
+      stop() { window.__cameraStopped = true; }
+    };
+    const stream = new MediaStream();
+    stream.getVideoTracks = () => [track];
+    stream.getTracks = () => [track];
+    navigator.mediaDevices.getUserMedia = async () => stream;
+    Object.defineProperty(HTMLMediaElement.prototype, 'readyState', { configurable: true, get: () => 3 });
+    HTMLMediaElement.prototype.play = async () => {};
+    HTMLMediaElement.prototype.pause = () => {};
+  });
+  await page.getByRole('button', { name: 'Escanear EAN com a câmera' }).click();
+  await expect(page.getByText(/Foco automático contínuo ativado/)).toBeVisible();
+  await expect(page.getByRole('button', { name: /Reajustar foco/ })).toBeVisible();
+  await expect(page.getByRole('slider', { name: 'Zoom da câmera' })).toBeVisible();
+  await page.getByRole('button', { name: /Reajustar foco/ }).click();
+  await page.getByRole('button', { name: /Ligar luz/ }).click();
+  await expect(page.getByRole('button', { name: /Desligar luz/ })).toBeVisible();
+  await page.getByRole('slider', { name: 'Zoom da câmera' }).focus();
+  await page.getByRole('slider', { name: 'Zoom da câmera' }).press('End');
+  await expect.poll(async () => page.evaluate(() =>
+    window.__cameraConstraints.map(x => x.advanced?.[0]))).toContainEqual({ focusMode: 'continuous' });
+  await expect.poll(async () => page.evaluate(() =>
+    window.__cameraConstraints.map(x => x.advanced?.[0]))).toContainEqual({ torch: true });
+  await expect.poll(async () => page.evaluate(() =>
+    window.__cameraConstraints.map(x => x.advanced?.[0]))).toContainEqual({ zoom: 2 });
+  await page.getByRole('button', { name: 'Fechar leitor de EAN' }).click();
+  expect(await page.evaluate(() => window.__cameraStopped)).toBe(true);
+});
+
+test('sem API de autofoco, a câmera ainda abre e oferece orientação de distância', async ({ page }) => {
+  await page.evaluate(() => {
+    window.BarcodeDetector = class {
+      static async getSupportedFormats() { return ['ean_13']; }
+      async detect() { return []; }
+    };
+    const track = { getCapabilities: () => ({}), stop() {} };
+    const stream = new MediaStream();
+    stream.getVideoTracks = () => [track];
+    stream.getTracks = () => [track];
+    navigator.mediaDevices.getUserMedia = async () => stream;
+    Object.defineProperty(HTMLMediaElement.prototype, 'readyState', { configurable: true, get: () => 3 });
+    HTMLMediaElement.prototype.play = async () => {};
+    HTMLMediaElement.prototype.pause = () => {};
+  });
+  await page.getByRole('button', { name: 'Escanear EAN com a câmera' }).click();
+  await expect(page.getByText(/O navegador não permite ajustar o foco/)).toBeVisible();
+  await expect(page.getByRole('button', { name: /Reajustar foco/ })).toHaveCount(0);
+  await expect(page.getByRole('slider', { name: 'Zoom da câmera' })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Fechar leitor de EAN' }).click();
+});

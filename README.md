@@ -155,3 +155,12 @@ Por compatibilidade, lotes antigos que já existam sem código continuam legíve
 - **Conta Supabase:** a primeira fotografia de um produto do catálogo central associa automaticamente o código ao catálogo privado da conta antes de enviar a imagem para o Supabase Storage com RLS. A imagem privada reaparece quando o EAN é encontrado novamente nessa conta.
 - Se o EAN não existir no catálogo, é possível informar o nome manualmente no formulário e capturar a imagem. A foto é opcional e não bloqueia o cadastro do lote.
 - Testar a câmera e a leitura de embalagens reais em Android/iPhone; os testes automatizados usam câmeras e fotos simuladas.
+
+
+## Foco automático do leitor EAN (dispositivos móveis)
+
+O leitor tenta selecionar a câmera traseira com resolução ideal Full HD. Após abrir, consulta as capacidades reais do dispositivo com `MediaStreamTrack.getCapabilities()` e pede `focusMode: continuous` via `applyConstraints` quando disponível; caso contrário tenta `auto`. Em aparelhos que não permitem controlar o foco por API, a câmera continua operando normalmente, com instruções de distância e iluminação. **O site não pode obrigar o hardware a focar se o navegador não expuser o recurso.**
+
+A imagem tem moldura para centralizar o EAN. Se o aparelho oferecer ajuste de foco, aparece o botão **Reajustar foco**; se oferecer zoom óptico/digital por API, aparece controle **Zoom**; se suportar lanterna, **Ligar luz**. Os controles não suportados ficam ocultos, e qualquer falha de ajuste não interrompe a leitura. O mesmo scanner é usado na Identificação rápida e no cadastro de lote. A câmera é liberada após reconhecimento ou fechamento.
+
+Testes unitários de capacidades e limites de zoom; Playwright com APIs de câmera simuladas. Verificar o foco físico num smartphone Android/iPhone real antes de concluir a validação do dispositivo.
