@@ -12,7 +12,16 @@ jest.mock('../push/client',()=>({
 }));
 const cloud={savePushPreferences:jest.fn(async()=>{})};
 const user={id:'usuario-de-teste'};
-beforeEach(()=>jest.clearAllMocks());
+beforeEach(()=>{
+ jest.clearAllMocks();
+ client.getPushStatus.mockResolvedValue({
+   enabled:false,preferred_period:'auto',timezone:'America/Sao_Paulo',
+   activity:[],period:'morning',schedule:'7h'
+ });
+ client.enablePush.mockResolvedValue(true);
+ client.disablePush.mockResolvedValue();
+ cloud.savePushPreferences.mockResolvedValue();
+});
 test('não pede permissão push antes do clique',async()=>{
  render(<PushSettings cloud={cloud} user={user}/>);
  await screen.findByText(/7h/);
