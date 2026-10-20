@@ -323,3 +323,9 @@ tbody tr:hover { background: #f8f8f9; }
   .demo-banner__actions { width: 100%; max-width: none; }
   .demo-banner__actions span { text-align: left; }
 }
+
+/* Catálogo público é somente leitura e independente dos lotes locais. */
+.catalog-server-label { display:flex;align-items:center;gap:7px;margin:13px 0 11px;font-size:12px;color:var(--ink-secondary);font-weight:650; }
+.catalog-server-label svg { flex-shrink:0; }
+.catalog-central-photo { display:flex;align-items:center;justify-content:space-between;gap:14px;padding:13px 15px;margin-top:12px;border:1px solid var(--border);border-radius:11px;background:var(--surface-subtle);font-size:12px; }
+@media(max-width:650px){.catalog-central-photo{display:grid;}.catalog-central-photo button{width:100%;white-space:normal;}}

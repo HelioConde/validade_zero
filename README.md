@@ -129,3 +129,12 @@ Na faixa **Teste o Validade Zero antes de criar uma conta**, o botão **Salvar n
 Visitantes devem baixar o backup JSON regularmente: limpeza dos dados do navegador, troca de aparelho, navegação privada ou redefinição do perfil podem apagar a cópia local. Usuários com sessão Supabase válida continuam entrando automaticamente na nuvem ao revisitar.
 
 Esta é a experiência de aquisição "teste antes do cadastro". Sem rastreamento comportamental ou telemetria invasiva.
+
+
+## Catálogo público central sem login (19.175 produtos)
+
+A base de referência para EAN e códigos internos foi importada ao banco na tabela `validadezero_catalogo_central`. **Qualquer visitante pode consultar o produto por EAN sem criar conta e sem importar o CSV**. A busca prioriza o catálogo local/privado do usuário e consulta o catálogo público somente quando o código não está nele. O servidor retorna somente nome, código, setor e indicador de revisão; não tem acesso aos seus lotes.
+
+Exemplo confirmado na importação: `7898276970072` → `ESPUMANTE CASA VALDUGA 750ML 130 ANOS` (`Bebidas`). Dados importados do catálogo do projeto, não de uma fonte oficial de validação GS1; conferir nomes, códigos e setores nas operações reais.
+
+Para registrar foto quando um produto foi encontrado no catálogo central, usuários autenticados podem **Adicionar ao meu catálogo e habilitar foto**. Veja [docs/CATALOGO_CENTRAL.md](docs/CATALOGO_CENTRAL.md). A versão local continua sem login e os lotes continuam salvos só no navegador.

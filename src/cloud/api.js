@@ -292,8 +292,29 @@ export async function uploadProductPhoto({ code, userId, blob, oldPath = '' }) {
   return path;
 }
 
+
+// Associa produto público à conta sem sobrescrever nome ou foto já existentes.
+export async function adoptCentralProduct(item) {
+  if (!/^\d{1,14}$/.test(String(item?.code || '')) || !item?.name) {
+    throw new Error('O produto central não possui código e nome válidos.');
+  }
+  await dbRequest('validadezero_catalogo', 'on_conflict=user_id,code', {
+    method: 'POST',
+    body: [{
+      code: item.code,
+      name: item.name,
+      sector: item.sector || '',
+      needs_review: Boolean(item.review)
+    }],
+    prefer: 'missing=default,resolution=ignore-duplicates,return=minimal'
+  });
+  const saved = await findProduct(item.code);
+  if (!saved) throw new Error('Produto não encontrado na conta após associação.');
+  return saved;
+}
+
 export const cloudApi = {
   listLots, upsertLot, deleteLot, countCatalog, findProduct, importProducts,
   migrateLocalCatalog, migrateLocalLots,
-  downloadProductPhoto, uploadProductPhoto
+  downloadProductPhoto, uploadProductPhoto, adoptCentralProduct
 };
