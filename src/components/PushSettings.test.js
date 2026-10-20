@@ -14,6 +14,7 @@ const cloud={savePushPreferences:jest.fn(async()=>{})};
 const user={id:'usuario-de-teste'};
 beforeEach(()=>{
  jest.clearAllMocks();
+ client.pushSupported.mockReturnValue(true);
  client.getPushStatus.mockResolvedValue({
    enabled:false,preferred_period:'auto',timezone:'America/Sao_Paulo',
    activity:[],period:'morning',schedule:'7h'
