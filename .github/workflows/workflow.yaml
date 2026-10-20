@@ -1,16 +1,28 @@
-name: Deploy via ftp
-on: push
+name: CI - Validade Zero
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
 jobs:
-  deploy:
-    name: Deploy
+  verify:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-
-    - name: FTP Deploy Locaweb
-      uses: locaweb/ftp-deploy@1.0.0
-      with:
-        host: ${{ secrets.HOST }} 
-        user: ${{ secrets.USER }}
-        password: ${{ secrets.PASS }}
-        localDir: ${{ github.workspace }}/build
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Run tests
+        run: npm test -- --watchAll=false
+        env:
+          CI: 'true'
+      - name: Build
+        run: npm run build
+        env:
+          CI: 'true'

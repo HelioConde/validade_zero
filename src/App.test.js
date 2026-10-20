@@ -1,8 +1,23 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import App from './App';
+import { STORAGE_KEY } from './domain/validade';
 
-test('renders learn react link', () => {
+beforeEach(() => window.localStorage.clear());
+
+test('renders empty inventory and entry form', () => {
   render(<App />);
-  const linkElement = screen.getByText(/learn react/i);
-  expect(linkElement).toBeInTheDocument();
+  expect(screen.getByText('Seu controle começa aqui')).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: /Cadastrar primeiro lote/i }));
+  expect(screen.getByRole('heading', { name: /Cadastrar novo lote/i })).toBeInTheDocument();
+});
+
+test('registers a lot and persists it locally', () => {
+  render(<App />);
+  fireEvent.click(screen.getByRole('button', { name: /Cadastrar primeiro lote/i }));
+  fireEvent.change(screen.getByPlaceholderText('Ex.: Leite integral 1 L'), { target: { value: 'Leite integral' } });
+  fireEvent.change(screen.getByPlaceholderText('Ex.: L-2026-001'), { target: { value: 'L01' } });
+  fireEvent.change(screen.getByLabelText(/Data de validade/), { target: { value: '2030-01-01' } });
+  fireEvent.click(screen.getByRole('button', { name: /Cadastrar lote/ }));
+  expect(screen.getByText('Leite integral')).toBeInTheDocument();
+  expect(JSON.parse(window.localStorage.getItem(STORAGE_KEY))).toHaveLength(1);
 });
