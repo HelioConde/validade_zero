@@ -132,3 +132,67 @@ test('exige setor manual quando catálogo não possui categoria', async ({ page 
   await page.getByRole('button', { name: 'Cadastrar lote', exact: true }).click();
   await expect(page.getByText('Selecione um setor válido.')).toBeVisible();
 });
+
+
+test('câmera reconhece EAN e consulta o catálogo sem modificar validade', async ({ page }) => {
+  const csv = 'codigo;nome;setor_sugerido;revisar\n7891234567895;BISCOITO INTEGRAL;Mercearia;OK\n';
+  await page.getByLabel('Arquivo CSV do catálogo').setInputFiles({
+    name: 'catalogo.csv', mimeType: 'text/csv', buffer: Buffer.from(csv)
+  });
+  await page.evaluate(() => {
+    window.BarcodeDetector = class {
+      static async getSupportedFormats() { return ['ean_13']; }
+      async detect() { return [{ rawValue: '7891234567895' }]; }
+    };
+    navigator.mediaDevices.getUserMedia = async () => new MediaStream();
+    Object.defineProperty(HTMLMediaElement.prototype, 'readyState', { configurable: true, get: () => 3 });
+    HTMLMediaElement.prototype.play = async () => {};
+    HTMLMediaElement.prototype.pause = () => {};
+  });
+  await page.getByRole('button', { name: 'Escanear EAN com a câmera' }).click();
+  await expect(page.getByRole('region', { name: 'Leitor de EAN' })).toBeVisible();
+  await expect(page.getByLabel('Código EAN / código interno')).toHaveValue('7891234567895');
+  await expect(page.getByLabel('Produto encontrado').getByText('BISCOITO INTEGRAL')).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Leitor de EAN' })).toHaveCount(0);
+});
+
+test('OCR sugere validade sem preencher data antes da escolha explícita', async ({ page }) => {
+  await page.getByRole('button', { name: /Cadastrar primeiro lote/ }).click();
+  await page.evaluate(() => {
+    window.Tesseract = {
+      createWorker: async () => ({
+        recognize: async () => ({ data: { text: 'FAB: 10/01/2026\nVAL: 30/11/2026' } }),
+        terminate: async () => {}
+      })
+    };
+  });
+  await page.getByRole('button', { name: /Ler validade pela câmera/ }).click();
+  const input = page.getByLabel('Selecionar imagem da validade');
+  await input.setInputFiles({
+    name: 'embalagem.png', mimeType: 'image/png',
+    buffer: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+p2ioAAAAASUVORK5CYII=', 'base64')
+  });
+  await expect(page.getByText(/Selecione a validade correta/)).toBeVisible();
+  await expect(page.getByLabel('Data de validade *')).toHaveValue('');
+  await expect(page.getByRole('button', { name: /30\/11\/2026/ })).toBeVisible();
+  await page.getByRole('button', { name: /30\/11\/2026/ }).click();
+  await expect(page.getByLabel('Data de validade *')).toHaveValue('2026-11-30');
+  await expect(page.getByRole('region', { name: 'Reconhecimento da validade' })).toHaveCount(0);
+});
+
+test('permite retorno à digitação caso a câmera não esteja disponível', async ({ page }) => {
+  await page.evaluate(() => {
+    window.BarcodeDetector = class {
+      static async getSupportedFormats() { return ['ean_13']; }
+    };
+    navigator.mediaDevices.getUserMedia = async () => {
+      const err = new Error('Sem permissão');
+      err.name = 'NotAllowedError';
+      throw err;
+    };
+  });
+  await page.getByRole('button', { name: 'Escanear EAN com a câmera' }).click();
+  await expect(page.getByText(/Permissão da câmera negada/)).toBeVisible();
+  await page.getByRole('button', { name: 'Voltar para digitação' }).click();
+  await expect(page.getByLabel('Código EAN / código interno')).toBeEnabled();
+});

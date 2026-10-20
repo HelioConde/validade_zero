@@ -104,3 +104,12 @@ O GitHub Pages usa Supabase no build de produção com uma chave **publishable**
 - Nunca utilize `service_role` ou chave `sb_secret_` no navegador, `.env.production` nem em GitHub Pages.
 
 Detalhes em [docs/SUPABASE.md](docs/SUPABASE.md).
+
+
+## Leitura por câmera (fase inicial)
+
+Depois de entrar e importar o catálogo, use **Escanear EAN** para abrir a câmera e buscar o produto automaticamente. Quando a API de detecção nativa não existir, o site tenta ZXing. Se a câmera for negada, digite o EAN.
+
+No formulário do lote, **Ler validade pela câmera (OCR)** abre a câmera, permite fotografar ou escolher imagem existente e extrai sugestões de datas usando Tesseract.js. O usuário **sempre confirma a data** antes de cadastrar o lote. Nenhuma foto do OCR é enviada ao Supabase.
+
+Documentação de compatibilidade, privacidade e limites: [docs/SCANNERS.md](docs/SCANNERS.md).

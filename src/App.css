@@ -251,3 +251,34 @@ tbody tr:hover { background: #f8f8f9; }
 .auth-switch {background:transparent;border:0;text-decoration:underline;font-weight:700;color:var(--ink);padding:15px 0;}
 .auth-card small {display:block;color:var(--ink-secondary);font-size:11px;}
 @media (max-width:620px) { .topbar__right .topbar__pill {display:none;} .legacy-transfer {display:block;} .legacy-transfer button {margin-top:12px;width:100%;white-space:normal;} .auth-card {padding:22px 19px;} }
+
+
+/* Leitores de código e validade — utilizam a mesma hierarquia visual preta. */
+.scanner-window, .expiry-scanner__panel { background: #f8f8f9; border: 1px solid var(--border); border-radius: 13px; padding: 17px; }
+.scanner-window { margin-top: 14px; max-width: 740px; }
+.scanner-window__heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 12px; }
+.scanner-window__heading strong { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--ink-strong); }
+.scanner-video { display: block; width: 100%; max-width: 100%; min-height: 180px; max-height: 310px; aspect-ratio: 4/3; border-radius: 12px; background: #18181b; object-fit: cover; }
+.scanner-window p, .expiry-scanner__panel p { font-size: 12px; margin: 10px 0; color: var(--ink-secondary); }
+.scanner-window .scanner-error { color: var(--danger); font-weight: 700; }
+.scanner-hint { font-size: 11px !important; color: var(--ink-muted) !important; }
+.expiry-scanner { margin-top: -5px; }
+.expiry-scanner__panel { display: grid; gap: 9px; }
+.expiry-scanner__buttons { display: flex; flex-wrap: wrap; gap: 8px; }
+.ocr-candidates { border-top: 1px solid var(--border); padding-top: 12px; display: grid; gap: 8px; }
+.ocr-candidates > strong { font-size: 12px; color: var(--ink-strong); }
+.ocr-candidate { display: flex; gap: 9px; align-items: center; background: #fff; border: 1px solid #cfd0d5; border-radius: 9px; min-height: 48px; padding: 10px 12px; color: var(--ink-strong); text-align: left; font-weight: 780; }
+.ocr-candidate:hover { border-color: #222; background: #f1f1f3; }
+.ocr-candidate small { margin-left: auto; color: var(--ink-secondary); font-size: 11px; font-weight: 500; }
+.ocr-original summary { cursor: pointer; color: var(--ink-secondary); font-size: 12px; }
+.ocr-original pre { max-height: 150px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 10px; font-size: 11px; }
+.ocr-progress { font-weight: 760; }
+.catalog-search__controls { flex-wrap: wrap; }
+.catalog-search__controls > input { flex: 1 1 190px; }
+@media (max-width: 750px) {
+  .expiry-scanner__buttons { display: grid; grid-template-columns: 1fr; }
+  .expiry-scanner__buttons .btn, .scanner-window > .btn { min-height: 46px; }
+  .ocr-candidate { flex-wrap: wrap; }
+  .ocr-candidate small { margin-left: 0; }
+  .scanner-video { min-height: 190px; }
+}
