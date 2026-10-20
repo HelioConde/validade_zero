@@ -1,7 +1,7 @@
-# Validade Zero — Design System v1
+# Validade Zero — Design System v2 (preto)
 
 ## Direção (Taste / Awesome Design)
-Interface operacional para varejo: **clara, rápida, serena e confiável**. O produto deve permitir identificar problemas antes de distrações estéticas. A identidade combina verde-petróleo profundo, superfícies suaves, feedback orientado por severidade e linhas nítidas. Evitar efeitos decorativos sem função.
+Interface operacional para varejo: **clara, rápida, serena e confiável**. O produto deve permitir identificar problemas antes de distrações estéticas. A identidade usa preto profundo como cor principal, superfícies brancas e cinzas neutros, com feedback colorido reservado a estados operacionais (vencido, urgente, atenção e em dia). Evitar efeitos decorativos sem função.
 
 Fonte principal: **Inter** (com Segoe UI / fonte de sistema como fallback, sem carregar fontes remotas). Títulos com peso 760–780 e tracking levemente negativo. Texto legível a partir de 14px; metadados 11–12px só quando não forem informação primária.
 
@@ -10,13 +10,13 @@ Arquivo fonte da verdade: \`src/styles/tokens.css\`. Não duplicar cores, sombra
 
 | Token | Valor | Aplicação |
 | --- | --- | --- |
-| \`--brand\` | \`#0d7665\` | Botões, foco contextual, navegação selecionada |
-| \`--brand-hover\` | \`#075a4f\` | Hover contrastante |
-| \`--surface-canvas\` | \`#f5f7f7\` | Plano de fundo |
+| \`--brand\` | \`#111111\` | Botões, foco contextual, navegação selecionada |
+| \`--brand-hover\` | \`#303034\` | Hover contrastante |
+| \`--surface-canvas\` | \`#f6f6f7\` | Plano de fundo |
 | \`--surface-card\` | \`#ffffff\` | Cards e painéis |
-| \`--ink\` | \`#163437\` | Texto |
-| \`--ink-secondary\` | \`#536e72\` | Subtítulos e descrições |
-| \`--border\` | \`#dce6e4\` | Divisórias |
+| \`--ink\` | \`#262629\` | Texto |
+| \`--ink-secondary\` | \`#56565e\` | Subtítulos e descrições |
+| \`--border\` | \`#dedee2\` | Divisórias |
 | \`--danger\` | \`#a93337\` | Vencido / exclusão |
 | \`--warning\` | \`#946114\` | Vence em 0–7 dias |
 | \`--info\` | \`#216e83\` | Vence em 8–30 dias |
@@ -57,3 +57,12 @@ A primeira rodada foi feita a partir do código e da estrutura da interface já 
 
 ## Escopo atual
 Existe **um dashboard com estados de cadastro, edição, filtro, inventário e vazio**, não um sistema de múltiplas rotas React. Não introduzir “páginas” falsas apenas para multiplicar a UI. Expandir este sistema visual para páginas futuras como Relatórios e Equipe quando essas funções existirem de fato.
+
+## Atualização da identidade — preto
+
+- Preto (`#111111`) é a cor primária de botões, links de ação, seleção e foco em superfície clara.
+- Menu lateral quase preto (`#101012`), seleção em cinza escuro e marca branca, inclusive no mobile.
+- Superfícies e filtros permanecem claros para facilitar a leitura de EAN, nome, quantidade e validade.
+- Vermelho, âmbar, azul e verde só sinalizam condições operacionais de vencimento e sucesso. **Não aplicar essas cores como marca.**
+- Foco dentro da barra lateral usa contorno branco para contraste, mantendo o foco preto nas superfícies claras.
+- O tema do navegador e do manifesto PWA acompanha o cabeçalho preto.

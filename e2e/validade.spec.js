@@ -78,3 +78,22 @@ test('confirmação para mudanças não salvas e exclusão de lote', async ({ pa
   await page.getByRole('button', { name: 'Excluir lote I-01' }).click();
   await expect(page.getByText('Seu controle começa aqui')).toBeVisible();
 });
+
+test('tema principal preto e estados de validade com cores semânticas', async ({ page }) => {
+  const theme = await page.evaluate(() => {
+    const style = getComputedStyle(document.documentElement);
+    return {
+      brand: style.getPropertyValue('--brand').trim(),
+      sidebar: getComputedStyle(document.querySelector('.sidebar')).backgroundColor,
+      primaryButton: getComputedStyle(document.querySelector('.btn--primary')).backgroundColor,
+      statusDanger: style.getPropertyValue('--danger').trim(),
+      statusWarning: style.getPropertyValue('--warning').trim()
+    };
+  });
+  expect(['#111111', '#111']).toContain(theme.brand);
+  expect(theme.sidebar).toBe('rgb(16, 16, 18)');
+  expect(theme.primaryButton).toBe('rgb(17, 17, 17)');
+  expect(theme.statusDanger).not.toBe(theme.brand);
+  expect(theme.statusWarning).not.toBe(theme.brand);
+  await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('content', '#101012');
+});
