@@ -111,7 +111,7 @@ export async function signIn(email, password) {
   return payload.user;
 }
 export async function signUp(email, password) {
-  const payload = await authRequest('signup', {
+  const payload = await authRequest('signup?redirect_to=' + encodeURIComponent(window.location.origin + window.location.pathname), {
     body: { email, password },
   });
   if (payload?.access_token) { writeSession(payload); return { user: payload.user, confirmed: true }; }
@@ -144,7 +144,7 @@ export async function upsertLot(entry, isEditing) {
     if (!data?.length) throw new Error('Lote não encontrado ou sem permissão para editar.');
   } else {
     await dbRequest('validadezero_lotes', '', {
-      method: 'POST', body: values, prefer: 'return=minimal'
+      method: 'POST', body: values, prefer: 'missing=default,return=minimal'
     });
   }
 }
@@ -178,7 +178,7 @@ export async function importProducts(products, onProgress) {
       updated_at: new Date().toISOString()
     }));
     await dbRequest('validadezero_catalogo', 'on_conflict=user_id,code', {
-      method: 'POST', body: group, prefer: 'resolution=merge-duplicates,return=minimal'
+      method: 'POST', body: group, prefer: 'missing=default,resolution=merge-duplicates,return=minimal'
     });
     done += group.length;
     if (onProgress) onProgress(done);
@@ -191,7 +191,7 @@ export async function migrateLocalLots(entries) {
   for (let i = 0; i < entries.length; i += 100) {
     const group = entries.slice(i, i + 100).map(lotFields);
     await dbRequest('validadezero_lotes', 'on_conflict=user_id,id', {
-      method: 'POST', body: group, prefer: 'resolution=ignore-duplicates,return=minimal'
+      method: 'POST', body: group, prefer: 'missing=default,resolution=ignore-duplicates,return=minimal'
     });
     total += group.length;
   }
