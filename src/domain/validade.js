@@ -56,6 +56,12 @@ export function sortByExpiry(entries) {
   );
 }
 
+// Obrigatório em novos cadastros. Códigos internos numéricos também são aceitos.
+// Lotes históricos sem código continuam legíveis para regularização.
+export function isValidProductCode(code) {
+  return typeof code === 'string' && /^\d{1,14}$/.test(code.trim());
+}
+
 export function isValidEntry(entry) {
   return Boolean(
     entry && typeof entry.id === 'string' && entry.id.length > 0 && entry.id.length <= 128 &&

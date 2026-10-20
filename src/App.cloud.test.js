@@ -35,6 +35,7 @@ afterEach(() => jest.restoreAllMocks());
 function registerSample() {
   fireEvent.click(screen.getByRole('button', { name: /Cadastrar primeiro lote/i }));
   fireEvent.change(screen.getByPlaceholderText('Ex.: Leite integral 1 L'), { target: { value: 'BISCOITO INTEGRAL' } });
+  fireEvent.change(screen.getByLabelText('EAN / código interno *'), { target: { value: '000123' } });
   fireEvent.change(screen.getByPlaceholderText('Ex.: L-2026-001'), { target: { value: 'L-LOCAL-1' } });
   fireEvent.change(screen.getByLabelText('Data de validade *'), { target: { value: '2030-12-31' } });
   fireEvent.click(screen.getByRole('button', { name: 'Cadastrar lote' }));

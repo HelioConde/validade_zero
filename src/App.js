@@ -9,7 +9,7 @@ import { CLOUD_ENABLED, cloudApi, hasStoredCloudSession, restoreSession, signIn,
 import { MAX_CATALOG_CSV_BYTES, findProductByCode, loadCatalog, parseProductCatalogCsv, saveCatalog } from './domain/catalogo';
 import {
   STORAGE_KEY, SECTORS, createBackup, formatDate, isValidEntry, parseBackup,
-  parseDateOnly, readEntries, sortByExpiry, statusLabel, statusOf, summarize, toCsv
+  isValidProductCode, parseDateOnly, readEntries, sortByExpiry, statusLabel, statusOf, summarize, toCsv
 } from './domain/validade';
 
 const EMPTY = { name: '', code: '', sector: 'Mercearia', batch: '', quantity: '1', expiration: '' };
@@ -42,6 +42,7 @@ function Field({ label, required, field, error, children }) {
 function EntryForm({ initial, onSave, onCancel, onDirtyChange, fromCatalog = false }) {
   const [values, setValues] = useState(initial || EMPTY);
   const [errors, setErrors] = useState({});
+  const [lotScannerOpen, setLotScannerOpen] = useState(false);
   const fields = useRef({});
   useEffect(() => { fields.current.name?.focus(); }, []);
 
@@ -68,6 +69,8 @@ function EntryForm({ initial, onSave, onCancel, onDirtyChange, fromCatalog = fal
     const quantity = Number(values.quantity);
     const nextErrors = {};
     if (!name || name.length > 120) nextErrors.name = 'Informe o nome do produto (até 120 caracteres).';
+    if (!isValidProductCode(values.code)) nextErrors.code =
+      'Informe o EAN ou código interno numérico (de 1 a 14 dígitos).';
     if (!SECTORS.includes(values.sector)) nextErrors.sector = 'Selecione um setor válido.';
     if (!batch || batch.length > 70) nextErrors.batch = 'Informe o lote do produto.';
     if (values.quantity === '' || !Number.isSafeInteger(quantity) || quantity < 1) nextErrors.quantity = 'Informe uma quantidade inteira maior que zero.';
@@ -102,9 +105,21 @@ function EntryForm({ initial, onSave, onCancel, onDirtyChange, fromCatalog = fal
           placeholder="Ex.: Leite integral 1 L" />
       </Field>
       <div className="form-row">
-        <Field label="Código / EAN" field="code" error={errors.code}>
-          <input {...inputProps('code')} autoComplete="off" spellCheck={false} maxLength="60"
-            value={values.code} onChange={e => update('code', e.target.value)} placeholder="Opcional" />
+        <Field label="EAN / código interno" required field="code" error={errors.code}>
+          <div className="ean-input-wrap">
+            <input {...inputProps('code')} autoComplete="off" spellCheck={false} inputMode="numeric"
+              required maxLength="14" pattern="[0-9]{1,14}"
+              value={values.code} onChange={e => update('code', e.target.value)}
+              placeholder="Ex.: 7898276970072" />
+            <button type="button" className="ean-input-camera"
+              aria-label="Escanear EAN do lote com a câmera" title="Escanear EAN do lote com a câmera"
+              aria-expanded={lotScannerOpen} onClick={() => setLotScannerOpen(true)}>
+              <Icon name="camera" size={20}/>
+            </button>
+          </div>
+          {lotScannerOpen && <BarcodeCamera
+            onDetected={code => { update('code', code); setLotScannerOpen(false); fields.current.code?.focus(); }}
+            onClose={() => setLotScannerOpen(false)}/>}
         </Field>
         <Field label="Setor" required field="sector" error={errors.sector}>
           <select {...inputProps('sector')} required value={values.sector} onChange={e => update('sector', e.target.value)}>
@@ -545,11 +560,17 @@ function InventoryApp({ cloud = null, user = null, onSignOut = null, onActivateC
             <form className="catalog-search" onSubmit={searchCatalog}>
               <label htmlFor="catalog-code">Código EAN / código interno</label>
               <div className="catalog-search__controls">
-                <input id="catalog-code" type="text" inputMode="numeric" autoComplete="off"
-                  placeholder="Ex.: 7891234567895" value={catalogCode} maxLength={14}
-                  onChange={event => { setCatalogCode(event.target.value); setCatalogFound(null); setCatalogNotice(''); }}/>
+                <div className="ean-input-wrap ean-input-wrap--search">
+                  <input id="catalog-code" type="text" inputMode="numeric" autoComplete="off"
+                    placeholder="Ex.: 7898276970072" value={catalogCode} maxLength={14}
+                    onChange={event => { setCatalogCode(event.target.value); setCatalogFound(null); setCatalogNotice(''); }}/>
+                  <button type="button" className="ean-input-camera"
+                    onClick={() => setScannerOpen(true)} title="Escanear EAN com a câmera"
+                    aria-label="Escanear EAN com a câmera" aria-expanded={scannerOpen}>
+                    <Icon name="camera" size={20}/>
+                  </button>
+                </div>
                 <button className="btn btn--primary" type="submit" disabled={catalogSearching}><Icon name="search" size={17}/>{catalogSearching ? 'Pesquisando…' : 'Buscar produto'}</button>
-                <button className="btn btn--outline" type="button" onClick={() => setScannerOpen(true)} aria-label="Escanear EAN com a câmera"><Icon name="scan" size={19}/>Escanear EAN</button>
               </div>
             </form>
             {scannerOpen && <BarcodeCamera onDetected={onBarcodeDetected} onClose={() => setScannerOpen(false)}/>}

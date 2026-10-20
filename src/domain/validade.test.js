@@ -1,4 +1,4 @@
-import { createBackup, daysUntil, formatDate, isValidEntry, parseBackup, parseDateOnly, sortByExpiry, statusOf, summarize, toCsv } from './validade';
+import { createBackup, daysUntil, formatDate, isValidEntry, isValidProductCode, parseBackup, parseDateOnly, sortByExpiry, statusOf, summarize, toCsv } from './validade';
 
 const now = new Date(2026, 9, 20);
 
@@ -49,4 +49,17 @@ test('exports and restores a backup using a versioned JSON format', () => {
   expect(() => parseBackup('{oops')).toThrow(/JSON/);
   expect(() => parseBackup(createBackup([{ ...entries[0], quantity: 0 }]))).toThrow(/inválidos/);
   expect(() => parseBackup(createBackup([entries[0], entries[0]]))).toThrow(/duplicados/);
+});
+
+test('EAN ou código interno é obrigatório para novos cadastros, com zeros preservados', () => {
+  expect(isValidProductCode('7898276970072')).toBe(true);
+  expect(isValidProductCode('0789012345678')).toBe(true);
+  expect(isValidProductCode('472')).toBe(true);
+  expect(isValidProductCode('')).toBe(false);
+  expect(isValidProductCode('  ')).toBe(false);
+  expect(isValidProductCode('EAN123')).toBe(false);
+  expect(isValidProductCode('123456789012345')).toBe(false);
+  // Histórico antigo sem EAN permanece legível e restaurável.
+  expect(isValidEntry({ id:'antigo', name:'Produto legado', code:'', sector:'Mercearia',
+    batch:'L1', quantity:1, expiration:'2030-12-31' })).toBe(true);
 });
