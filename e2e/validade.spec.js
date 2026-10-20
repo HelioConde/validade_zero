@@ -454,7 +454,7 @@ test('scanner EAN solicita foco contínuo e oferece zoom e lanterna quando dispo
   await expect.poll(async () => page.evaluate(() =>
     window.__cameraConstraints.map(x => x.advanced?.[0]))).toContainEqual({ torch: true });
   await expect.poll(async () => page.evaluate(() =>
-    window.__cameraConstraints.map(x => x.advanced?.[0]))).toContainEqual({ zoom: 2 });
+    window.__cameraConstraints.map(x => x.advanced?.[0]))).toContainEqual({ zoom: 4 });
   await page.getByRole('button', { name: 'Fechar leitor de EAN' }).click();
   expect(await page.evaluate(() => window.__cameraStopped)).toBe(true);
 });
