@@ -83,23 +83,29 @@ test('confirmação para mudanças não salvas e exclusão de lote', async ({ pa
   await expect(page.getByText('Seu controle começa aqui')).toBeVisible();
 });
 
-test('tema principal preto e estados de validade com cores semânticas', async ({ page }) => {
+test('identidade Ofertamática azul e estados de validade com cores semânticas', async ({ page }) => {
   const theme = await page.evaluate(() => {
     const style = getComputedStyle(document.documentElement);
     return {
       brand: style.getPropertyValue('--brand').trim(),
+      canvas: style.getPropertyValue('--surface-canvas').trim(),
       sidebar: getComputedStyle(document.querySelector('.sidebar')).backgroundColor,
       primaryButton: getComputedStyle(document.querySelector('.btn--primary')).backgroundColor,
       statusDanger: style.getPropertyValue('--danger').trim(),
       statusWarning: style.getPropertyValue('--warning').trim()
     };
   });
-  expect(['#111111', '#111']).toContain(theme.brand);
-  expect(theme.sidebar).toBe('rgb(16, 16, 18)');
-  expect(theme.primaryButton).toBe('rgb(17, 17, 17)');
+  expect(theme.brand).toBe('#1d63e9');
+  expect(theme.canvas).toBe('#f4f7fb');
+  expect(theme.sidebar).toBe('rgb(255, 255, 255)');
+  expect(theme.primaryButton).toBe('rgb(29, 99, 233)');
   expect(theme.statusDanger).not.toBe(theme.brand);
   expect(theme.statusWarning).not.toBe(theme.brand);
-  await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('content', '#101012');
+  await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('content', '#1d63e9');
+  const ecosystem = page.getByRole('link', { name: /Conheça o Ofertamática/i });
+  await expect(ecosystem).toHaveAttribute('href', 'https://ofertamatica.com.br/');
+  await expect(ecosystem).toHaveAttribute('target', '_blank');
+  await expect(ecosystem).toHaveAttribute('rel', 'noopener noreferrer');
 });
 
 
