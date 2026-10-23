@@ -79,3 +79,12 @@ test('a câmera OCR fica dentro do input de validade e pode ser fechada', () => 
   expect(screen.queryByRole('region', {name:'Reconhecimento da validade'})).not.toBeInTheDocument();
   expect(button).toHaveAttribute('aria-expanded', 'false');
 });
+
+test('apresenta o ecossistema Ofertamática sem misturar o aplicativo ou trocar de aba', () => {
+  render(<App />);
+  const link = screen.getByRole('link', { name: /Conheça o Ofertamática/i });
+  expect(link).toHaveAttribute('href', 'https://ofertamatica.com.br/');
+  expect(link).toHaveAttribute('target', '_blank');
+  expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+  expect(screen.getByRole('button', { name: /Cadastrar primeiro lote/i })).toBeInTheDocument();
+});
