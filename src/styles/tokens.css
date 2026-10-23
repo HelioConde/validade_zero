@@ -1,36 +1,36 @@
 :root {
   color-scheme: light;
+  /* Mesma identidade visual do Ofertamática; Validade Zero é ferramenta independente. */
   --font-body: Inter, "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
-  /* Identidade: preto e branco, com cores reservadas a alertas operacionais. */
-  --surface-canvas: #f6f6f7;
+  --surface-canvas: #f4f7fb;
   --surface-card: #ffffff;
-  --surface-subtle: #fafafa;
-  --surface-soft: #f1f1f2;
-  --ink: #262629;
-  --ink-strong: #111113;
-  --ink-secondary: #56565e;
-  --ink-muted: #64646d;
-  --brand: #111111;
-  --brand-hover: #303034;
-  --brand-soft: #f0f0f1;
-  --border: #dedee2;
-  --border-subtle: #ececef;
-  --focus: #111111;
-  /* Cores semânticas permanecem distintas da marca. */
+  --surface-subtle: #f8faff;
+  --surface-soft: #edf3fd;
+  --ink: #26344f;
+  --ink-strong: #18294a;
+  --ink-secondary: #566780;
+  --ink-muted: #607693;
+  --brand: #1d63e9;
+  --brand-hover: #174fbc;
+  --brand-soft: #eaf1ff;
+  --border: #d9e2ee;
+  --border-subtle: #e7edf4;
+  --focus: #1d63e9;
+  /* Estados de vencimento mantêm significado, com texto além da cor. */
   --danger: #a93337;
   --danger-soft: #fcebed;
   --warning: #946114;
   --warning-soft: #fff2dc;
   --info: #216e83;
   --info-soft: #e8f3f7;
-  --success: #146a4e;
-  --success-soft: #e7f5ed;
+  --success: #168451;
+  --success-soft: #eaf9f0;
   --radius-sm: 8px;
   --radius-md: 12px;
-  --radius-lg: 16px;
+  --radius-lg: 17px;
   --radius-xl: 20px;
-  --shadow-card: 0 3px 6px rgba(10, 10, 12, .025), 0 14px 36px rgba(10, 10, 12, .045);
-  --shadow-raised: 0 6px 12px rgba(10, 10, 12, .035), 0 18px 42px rgba(10, 10, 12, .075);
+  --shadow-card: 0 4px 12px rgba(34, 62, 103, .025), 0 16px 40px rgba(34, 62, 103, .065);
+  --shadow-raised: 0 8px 24px rgba(34, 62, 103, .075), 0 22px 60px rgba(34, 62, 103, .1);
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
