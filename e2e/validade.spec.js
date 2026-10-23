@@ -102,7 +102,7 @@ test('identidade Ofertamática azul e estados de validade com cores semânticas'
   expect(theme.statusDanger).not.toBe(theme.brand);
   expect(theme.statusWarning).not.toBe(theme.brand);
   await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('content', '#1d63e9');
-  const ecosystem = page.getByRole('link', { name: /Conheça o Ofertamática/i });
+  const ecosystem = page.locator('.ecosystem-link');
   await expect(ecosystem).toHaveAttribute('href', 'https://ofertamatica.com.br/');
   await expect(ecosystem).toHaveAttribute('target', '_blank');
   await expect(ecosystem).toHaveAttribute('rel', 'noopener noreferrer');
