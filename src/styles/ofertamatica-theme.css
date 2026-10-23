@@ -1,0 +1,198 @@
+/*
+ * Validade Zero · identidade Ofertamática
+ * Camada de apresentação sobre App.css. Não altera fluxos, formulários,
+ * permissões do scanner, modos de armazenamento ou notificações.
+ * Cores base: src/styles/tokens.css.
+ */
+
+/* Estrutura: mesma base clara do criador de cartazes. */
+body {
+  background: var(--surface-canvas);
+  color: var(--ink);
+}
+.sidebar {
+  background: #ffffff;
+  color: var(--ink-strong);
+  border-right: 1px solid var(--border-subtle);
+}
+.brand {
+  border-bottom: 1px solid var(--border-subtle);
+  margin-bottom: 26px;
+  padding-bottom: 27px;
+}
+.brand__mark {
+  background: var(--brand);
+  color: #ffffff;
+  box-shadow: 0 8px 18px rgba(29, 99, 233, .16);
+}
+.brand__text { color: var(--ink-strong); font-weight: 850; letter-spacing: -.04em; }
+.brand__text > span { color: var(--brand); }
+.brand__text small { color: var(--ink-muted); letter-spacing: 1.1px; }
+.sidebar__caption { color: var(--ink-muted); }
+.nav__item { color: #52637d; font-weight: 700; }
+.nav__item svg { color: currentColor; }
+.nav__item:hover { color: var(--brand-hover); background: #f2f6ff; }
+.nav__item.is-current {
+  color: var(--brand-hover);
+  background: var(--brand-soft);
+  border-color: #cbdcf9;
+  box-shadow: inset 3px 0 var(--brand);
+}
+.nav__item.is-current svg { color: var(--brand); }
+.sidebar .nav__item:focus-visible,
+.sidebar .ecosystem-link:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+.sidebar__footer {
+  background: var(--surface-subtle);
+  border-color: var(--border);
+  color: var(--ink-strong);
+}
+.sidebar__footer-icon { background: var(--brand-soft); color: var(--brand); }
+.sidebar__footer p { color: var(--ink-secondary); }
+.ecosystem-link {
+  display: block;
+  margin: 13px 8px 0;
+  padding: 9px 6px;
+  border-radius: 8px;
+  font-size: 11px;
+  line-height: 1.5;
+  text-align: center;
+  color: var(--ink-muted);
+  text-decoration: none;
+}
+.ecosystem-link strong { display: block; color: var(--brand-hover); font-size: 12px; }
+.ecosystem-link:hover { background: var(--brand-soft); }
+
+/* Cabeçalho, conteúdo e indicadores. */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  background: rgba(255, 255, 255, .97);
+  border-bottom-color: var(--border-subtle);
+  box-shadow: 0 5px 22px rgba(34, 62, 103, .035);
+  backdrop-filter: blur(12px);
+}
+.topbar__pill {
+  color: #285a9e;
+  background: #f0f6ff;
+  border-color: #d8e6fa;
+}
+.online-dot { background: var(--brand); }
+.main { width: min(100%, 1280px); }
+.heading h1 { color: var(--ink-strong); font-weight: 800; }
+.heading__intro { color: var(--ink-secondary); }
+.eyebrow { color: var(--brand); }
+.btn {
+  font-weight: 750;
+  border-radius: 10px;
+}
+.btn--primary {
+  box-shadow: 0 5px 12px rgba(29, 99, 233, .15);
+}
+.btn--outline {
+  color: var(--ink-strong);
+  border-color: var(--border);
+}
+.btn--outline:hover { background: var(--brand-soft); border-color: #9ebff5; color: var(--brand-hover); }
+.btn--ghost { background: var(--surface-soft); color: var(--ink-secondary); }
+.btn--ghost:hover { background: var(--brand-soft); color: var(--brand-hover); }
+.metric, .list-panel, .form-panel {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+}
+.metric:hover {
+  background: #fbfdff;
+  border-color: #9ebff5;
+  box-shadow: var(--shadow-raised);
+}
+.metric__label { color: var(--ink-secondary); }
+.metric--neutral .metric__icon { background: var(--brand-soft); color: var(--brand); }
+.metric--neutral .metric__value { color: var(--ink-strong); }
+.metric__foot { color: var(--ink-muted); }
+.metric:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+.insight { background: #edf4ff; border-color: #d8e7fd; }
+.insight__icon { background: #dceafe; color: var(--brand-hover); }
+.insight__copy strong { color: var(--ink-strong); }
+.insight__copy p { color: var(--ink-secondary); }
+.insight--warning { background: #fff9ed; border-color: #f1dfba; }
+.insight--warning .insight__icon { background: var(--warning-soft); color: var(--warning); }
+.insight--warning .insight__copy strong { color: #755017; }
+.insight--warning .insight__copy p { color: #806f4b; }
+
+/* Formulários, filtros e listas: superfícies suaves e foco azul. */
+.list-panel__header h2, .form-panel__head h2 { color: var(--ink-strong); }
+.count-bubble { background: var(--brand-soft); color: var(--brand-hover); }
+.search-field input, .sector-select select, .field input, .field select,
+.auth-form input, .push-settings__controls select {
+  border-color: var(--border);
+  background: #fff;
+  color: var(--ink-strong);
+}
+.search-field svg, .sector-select svg { color: var(--ink-muted); }
+.search-field input::placeholder, .field input::placeholder { color: #71819a; }
+.tab--active { color: var(--brand-hover); border-bottom-color: var(--brand); }
+.tab:hover { color: var(--brand-hover); }
+th { background: #f5f8fd; color: #5d708d; }
+td { color: var(--ink-secondary); }
+tbody tr:hover { background: #f7faff; }
+.product-name, .date-value, .table-number { color: var(--ink-strong); }
+.table-mono { color: var(--ink-secondary); }
+.row-actions button { color: var(--brand-hover); }
+.row-actions button:hover { border-color: #c8daf7; background: var(--brand-soft); }
+.empty-state__icon, .form-icon { background: var(--brand-soft); color: var(--brand); }
+.icon-button { background: #f3f7fd; color: var(--ink-secondary); }
+.icon-button:hover { background: var(--brand-soft); color: var(--brand); }
+.form-intro, .product-photo { background: var(--surface-subtle); border-color: var(--border-subtle); }
+.field__label { color: var(--ink-strong); }
+.ean-input-camera {
+  background: var(--brand-soft);
+  border-color: #d1e1fb;
+  color: var(--brand-hover);
+}
+.ean-input-camera:hover { background: #d9e8ff; border-color: #8db4f5; }
+.ean-input-camera:focus-visible { outline-color: var(--focus); }
+.scanner-zoom input[type="range"] { accent-color: var(--brand); }
+.ocr-candidate { border-color: var(--border); }
+.ocr-candidate:hover { background: var(--brand-soft); border-color: #8db4f5; }
+.push-settings { background: var(--surface-subtle); border-color: var(--border); }
+
+/* Primeiro acesso e autenticação sem aparência de painel administrativo pesado. */
+.demo-banner {
+  background: linear-gradient(118deg, #163f83 0%, #1d63e9 100%);
+  border: 1px solid #2e67be;
+  box-shadow: 0 16px 32px rgba(29, 99, 233, .12);
+}
+.demo-banner__eyebrow { color: #e9f2ff; }
+.demo-banner p { color: #f2f6ff; }
+.demo-banner .demo-banner__disclaimer,
+.demo-banner__actions span { color: #e2edff; }
+.btn--light { background: #fff; color: var(--brand-hover); border-color: #fff; }
+.btn--light:hover { background: #eaf1ff; color: var(--brand-hover); }
+.auth-mark { background: var(--brand); box-shadow: 0 8px 22px rgba(29, 99, 233, .19); }
+.auth-card { border-color: var(--border); }
+.auth-switch { color: var(--brand-hover); }
+.auth-error { background: var(--warning-soft); color: var(--warning); }
+
+/* Navegação mobile mantém texto e botões acessíveis, sem rolagem na página. */
+@media (max-width: 900px) {
+  .sidebar { border-right: 0; border-bottom: 1px solid var(--border-subtle); }
+  .brand { margin-bottom: 12px; padding-bottom: 12px; border-bottom: 0; }
+  .nav__item.is-current { box-shadow: inset 0 -3px var(--brand); }
+  .ecosystem-link { display: none; }
+  .main { width: min(100%, 1280px); }
+}
+@media (max-width: 620px) {
+  .topbar { min-height: 48px; height: auto; padding-block: 7px; gap: 8px; }
+  .topbar__right { min-width: 0; }
+  .brand__text { font-size: 19px; }
+  .heading h1 { font-size: clamp(27px, 7vw, 32px); }
+  .metric__label { font-size: 12px; line-height: 1.35; }
+  .metric__foot { font-size: 11px; }
+}
+@media print {
+  body { color: #111; background: white; }
+}
