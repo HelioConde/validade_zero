@@ -23,6 +23,10 @@ jobs:
           cache: npm
       - name: Instalar dependências do projeto
         run: npm ci
+      - name: Executar testes unitários e de interface
+        run: npm test -- --watchAll=false
+        env:
+          CI: 'true'
       - name: Compilar aplicação para teste E2E
         run: npm run build
         env:
