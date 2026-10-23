@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import './App.css';
+import './styles/ofertamatica-theme.css';
 import Icon from './components/Icon';
 import BarcodeCamera from './scanning/BarcodeCamera';
 import ProductPhoto from './components/ProductPhoto';
@@ -544,6 +545,9 @@ function InventoryApp({ cloud = null, user = null, onSignOut = null, onActivateC
           <span className="sidebar__footer-icon"><Icon name="shield" size={20}/></span>
           <div><strong>{cloud ? 'Nuvem protegida' : 'Modo local'}</strong><p>{cloud ? 'Dados vinculados à sua conta.' : 'Dados salvos somente neste navegador.'}</p></div>
         </div>
+        <a className="ecosystem-link" href="https://ofertamatica.com.br/" target="_blank" rel="noopener noreferrer" aria-label="Conheça o Ofertamática (abre em nova aba)">
+          Uma ferramenta do ecossistema <strong>Ofertamática ↗</strong>
+        </a>
       </aside>
 
       <div className="workspace">

@@ -1,22 +1,22 @@
-# Validade Zero — Design System v2 (preto)
+# Validade Zero — Design System v3 (identidade Ofertamática)
 
 ## Direção (Taste / Awesome Design)
-Interface operacional para varejo: **clara, rápida, serena e confiável**. O produto deve permitir identificar problemas antes de distrações estéticas. A identidade usa preto profundo como cor principal, superfícies brancas e cinzas neutros, com feedback colorido reservado a estados operacionais (vencido, urgente, atenção e em dia). Evitar efeitos decorativos sem função.
+Interface operacional para varejo: **clara, rápida, serena e confiável**. O produto deve permitir identificar problemas antes de distrações estéticas. A identidade usa azul Ofertamática #1d63e9, cartões brancos e fundos azulados muito claros. Vermelho, âmbar, azul-petróleo e verde continuam indicando estados operacionais (vencido, urgente, atenção e em dia). Evitar efeitos decorativos sem função.
 
 Fonte principal: **Inter** (com Segoe UI / fonte de sistema como fallback, sem carregar fontes remotas). Títulos com peso 760–780 e tracking levemente negativo. Texto legível a partir de 14px; metadados 11–12px só quando não forem informação primária.
 
 ## Fundamentos
-Arquivo fonte da verdade: \`src/styles/tokens.css\`. Não duplicar cores, sombras e raios para componentes futuros quando existir token reutilizável.
+Arquivo fonte da verdade: \`src/styles/tokens.css\`. A camada `src/styles/ofertamatica-theme.css` aplica a identidade à interface existente. Não duplicar cores, sombras e raios quando existir token reutilizável.
 
 | Token | Valor | Aplicação |
 | --- | --- | --- |
-| \`--brand\` | \`#111111\` | Botões, foco contextual, navegação selecionada |
-| \`--brand-hover\` | \`#303034\` | Hover contrastante |
-| \`--surface-canvas\` | \`#f6f6f7\` | Plano de fundo |
+| \`--brand\` | \`#1d63e9\` | Botões, foco contextual, navegação selecionada |
+| \`--brand-hover\` | \`#174fbc\` | Hover contrastante |
+| \`--surface-canvas\` | \`#f4f7fb\` | Plano de fundo |
 | \`--surface-card\` | \`#ffffff\` | Cards e painéis |
-| \`--ink\` | \`#262629\` | Texto |
-| \`--ink-secondary\` | \`#56565e\` | Subtítulos e descrições |
-| \`--border\` | \`#dedee2\` | Divisórias |
+| \`--ink\` | \`#26344f\` | Texto |
+| \`--ink-secondary\` | \`#566780\` | Subtítulos e descrições |
+| \`--border\` | \`#d9e2ee\` | Divisórias |
 | \`--danger\` | \`#a93337\` | Vencido / exclusão |
 | \`--warning\` | \`#946114\` | Vence em 0–7 dias |
 | \`--info\` | \`#216e83\` | Vence em 8–30 dias |
@@ -25,7 +25,7 @@ Arquivo fonte da verdade: \`src/styles/tokens.css\`. Não duplicar cores, sombra
 Escala de espaçamento: 4, 8, 12, 16, 20, 24, 32, 40, 48px. Radius: 8, 12, 16, 20px. Usar sombras em duas camadas e bordas suaves.
 
 ## Componentes existentes
-- **Sidebar + nav:** menu semântico, rótulos sempre visíveis, \`aria-current\` na rota/visão escolhida; em mobile vira menu horizontal rolável.
+- **Sidebar + nav:** menu claro, seleção azul, rótulos sempre visíveis, \`aria-current\` na rota/visão escolhida; em mobile vira menu horizontal rolável.
 - **Metric:** botão, não card passivo; cor + descrição da situação (jamais cor sozinha).
 - **Insight:** destaca prioridade operacional e oferece próxima ação.
 - **Form / Field:** rótulos acima, obrigatoriedade explícita, validação junto ao campo, \`aria-invalid\` e \`aria-describedby\`. Erro focaliza o primeiro campo inválido.
@@ -58,11 +58,14 @@ A primeira rodada foi feita a partir do código e da estrutura da interface já 
 ## Escopo atual
 Existe **um dashboard com estados de cadastro, edição, filtro, inventário e vazio**, não um sistema de múltiplas rotas React. Não introduzir “páginas” falsas apenas para multiplicar a UI. Expandir este sistema visual para páginas futuras como Relatórios e Equipe quando essas funções existirem de fato.
 
-## Atualização da identidade — preto
+## Identidade atual — família Ofertamática
 
-- Preto (`#111111`) é a cor primária de botões, links de ação, seleção e foco em superfície clara.
-- Menu lateral quase preto (`#101012`), seleção em cinza escuro e marca branca, inclusive no mobile.
-- Superfícies e filtros permanecem claros para facilitar a leitura de EAN, nome, quantidade e validade.
-- Vermelho, âmbar, azul e verde só sinalizam condições operacionais de vencimento e sucesso. **Não aplicar essas cores como marca.**
-- Foco dentro da barra lateral usa contorno branco para contraste, mantendo o foco preto nas superfícies claras.
-- O tema do navegador e do manifesto PWA acompanha o cabeçalho preto.
+- Azul `#1d63e9` é a cor primária de botões, foco, links e seleção em fundo claro.
+- Menu lateral branco, seleção azul e marca com nome escuro e detalhe azul; navegação mobile continua com rótulos.
+- Superfícies, filtros e campos claros para leitura de EAN, lote, quantidade e validade.
+- Vermelho, âmbar, azul-petróleo e verde indicam vencimento e sucesso, sempre com rótulos textuais.
+- `src/styles/tokens.css` é a fonte de tokens; `src/styles/ofertamatica-theme.css` centraliza as adaptações visuais.
+- O navegador e o manifesto PWA usam `#1d63e9`.
+- O Ofertamática continua aplicativo separado; link externo em nova aba com `noopener noreferrer`. Não há compartilhamento automático de conta, dados ou sessão.
+- Scanner, OCR, modo local, Supabase, cadastros e notificações Push permanecem intocados funcionalmente.
+- Testar com Jest, compilação CRA e Playwright desktop/mobile antes do merge para a `main`.
