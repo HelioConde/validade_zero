@@ -1,4 +1,28 @@
-# Validade Zero
+# Validade Zero — Controle de validade para o varejo
+
+**Acompanhe lotes e vencimentos de produtos com buscas, filtros e organização por data de validade.**
+
+![React](https://img.shields.io/badge/React-18-149ECA?logo=react&logoColor=white) ![Status](https://img.shields.io/badge/status-MVP%20em%20evolução-64748b)
+
+## Visão geral
+
+O projeto ajuda equipes de lojas a registrar lotes, identificar vencimentos próximos e priorizar produtos pelo método **FEFO** (primeiro a vencer, primeiro a sair). Há um modo local para experimentação; o repositório também documenta a integração com Supabase para persistência autenticada.
+
+| Recurso | Observação |
+| --- | --- |
+| Gestão de lotes | Cadastro, edição, filtros e alertas visuais |
+| Busca de produtos | Catálogo local por código/EAN e identificação rápida |
+| Dados locais | `localStorage`, sujeito à limpeza do navegador |
+| Persistência remota | Integração Supabase documentada abaixo; verificar configuração antes de produção |
+| Saída de dados | Exportação CSV e backups JSON |
+
+**Teste local:** com Node.js e npm instalados, execute `npm ci` e `npm start`. Acesse `http://localhost:3000`.
+
+> **Atenção:** não confie exclusivamente no armazenamento local para dados operacionais. Faça backups e valide permissões, integração, privacidade e procedimentos de segurança alimentar antes de usar em produção.
+
+[**Ver versão GitHub Pages**](https://helioconde.github.io/validade_zero/) · [**Documentação de design**](docs/DESIGN_SYSTEM.md)
+
+---
 
 Controle de validade de produtos por lote para equipes de supermercado. Primeira versão funcional (MVP) de retomada do projeto de 2023.
 
