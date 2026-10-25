@@ -25,7 +25,7 @@ Controlar a validade de muitos produtos é uma tarefa repetitiva e sujeita a err
 | Área | Funcionalidade |
 | --- | --- |
 | **Lotes** | Registro de produto, setor, quantidade, lote e data de validade |
-| **Prioridade** | Listagem FEFO (*first expired, first out*: primeiro a vencer, primeiro a sair) |
+| **Prioridade** | Listagem FEFO (*first expire, first out*: primeiro a vencer, primeiro a sair) |
 | **Alertas visuais** | Identificação de lotes vencidos e próximos do vencimento |
 | **Identificação** | Busca por EAN/código interno e catálogo importado ou remoto, conforme configuração |
 | **Câmera** | Fluxos experimentais de leitura de código e captura de validade em dispositivos compatíveis |
